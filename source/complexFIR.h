@@ -8,7 +8,7 @@
 #ifndef DEFINES
 #define DEFINES
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 #define DEBUG_SIZE 25
 
