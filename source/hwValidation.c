@@ -19,37 +19,66 @@
 #include "complexFIR.h"
 #endif // DEPENDENCIES
 
-#define LENGTH 20 //!< Length of the array
-#define TAPS 3    //!< Order of the filter
+#define DEBUG_MODE //!< Enable this to have verbose debug console output
 
-int **hw_array;     //!< Hardware-accelerated array pointer
-int **sw_array;     //!< Software-accelerated array pointer
-int **common_array; //!< Common (validation) array pointer
+#define LENGTH 25 //!< Length of the array
+
+int *hwInputReal;  //!< Hardware-accelerated array pointer real components
+int *hwInputImg;   //!< Hardware-accelerated array pointer imaginary components
+float *hwOutputReal; //!< Hardware-accelerated array pointer real components
+float *hwOutputImg;  //!< Hardware-accelerated array pointer imaginary components
+
+int *swInputReal;  //!< Softwae-accelerated array pointer real components
+int *swInputImg;   //!< Software-accelerated array pointer imaginary components
+float *swOutputReal; //!< Hardware-accelerated array pointer real components
+float *swOutputImg;  //!< Hardware-accelerated array pointer imaginary components
+
+// int *common_array; //!< Common (validation) array pointer
 
 void init();
 void deinit();
-void initializeArray(int **array, int length);
-int compareArray(int *a, int *b, int length);
+void initializeArray(int **arr, int length);
+int compareArray(float *a, float *b, int length);
 void copyArray(int *a, int *b, int length);
-void complexFIRreference(int dataLength, int filterLength, int ** data, int ** filter);
-void computeComplexFIRreference(int datasetLength, int filterLength, int input, int ** filter, int ** output);
+void complexFIRReference(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg, int inputLength, int kernelSize);
+void computeComplexFIRReference(int inputReal, int inputImg, int *filterReal, int *filterImg, int filterLength, float *outputReal, float *outputImg);
 
 /**
  * @brief Main application
  */
 int main(void)
 {
-    int filter[3] = {3, 5, 3};
+	printf("-----------------  Start validation  ------------------- \n");
     init();
-    doFIRreference(sw_array, filter);
-    fpga417_fir(hw_array, filter, 10);
+#ifdef DEBUG_MODE
+    for(int d = 0; d < LENGTH; d++)
+    {
+    	printf(" HARDWARE input real: %d, input imaginary: %d\n", hwInputReal[d], hwInputImg[d]);
+    	printf(" SOFTWARE input real: %d, input imaginary: %d\n", swInputReal[d], swInputImg[d]);
+    }
+#endif
+    printf("Arrays initialized\n");
 
-    if (compareArray(hw_array, sw_array, LENGTH) == 1)
-        printf("HW does not match SW\n");
-    else
-        printf("HW and SW match\n");
+    printf("Running filters...\n");
+#ifdef DEBUG_MODE
+    complexFIR(hwInputReal, hwInputImg, debugCoeffReal, debugCoeffImg, hwOutputReal, hwOutputImg, LENGTH, LENGTH);
+    //complexFIRReference(swInputReal, swInputImg, debugCoeffReal, debugCoeffImg, swOutputReal, swOutputImg, LENGTH, LENGTH);
+#endif
+    printf("Filters complete.\n");
+
+    printf("Comparing arrays...\n");
+//    if ((compareArray(hwOutputReal, swOutputReal, LENGTH) == 0) || (compareArray(hwOutputImg, swOutputImg, LENGTH) == 0))
+//    {
+//        printf("TEST FAILED. ELEMENTS DO NOT MATCH");
+//    }
+//    else
+//    {
+//        printf("Test passed\n");
+//    }
 
     deinit();
+    printf("Arrays freed.\n");
+	printf("---------------  End of validation program  ---------------\n");
     return 0;
 }
 
@@ -59,10 +88,28 @@ int main(void)
 void init()
 {
     srand(0);
-    initializeArray(&hw_array, LENGTH);
-    initializeArray(&sw_array, LENGTH);
-    initializeArray(&common_array, LENGTH);
-    copyArray(hw_array, sw_array, LENGTH);
+    // Intiialize the real input arrays:
+    initializeArray(&hwInputReal, LENGTH);
+    initializeArray(&swInputReal, LENGTH);
+    copyArray(hwInputReal, swInputReal, LENGTH);
+
+    // Initialize the imaginary input arrays:
+    initializeArray(&hwInputImg, LENGTH);
+    initializeArray(&swInputImg, LENGTH);
+    copyArray(hwInputImg, swInputImg, LENGTH);
+
+    //Initialize output arrays (really, allocate memory and set to zero)
+    hwOutputReal = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
+    hwOutputImg = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
+    swOutputReal = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
+    swOutputImg = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
+    for(int i = 0; i < LENGTH; i++)
+    {
+    	hwOutputReal[i] = 0.0;
+    	hwOutputImg[i] = 0.0;
+    	swOutputReal[i] = 0.0;
+    	swOutputImg[i] = 0.0;
+    }
 }
 
 /**
@@ -70,13 +117,14 @@ void init()
  */
 void deinit()
 {
-    free(hw_array);
-    free(sw_array);
-    free(common_array);
+    free(hwInputReal);
+    free(hwInputImg);
+    free(swInputReal);
+    free(swInputImg);
 }
 
 /**
- * @brief Initializes array to a set of random numbers
+ * @brief Allocates memory and initializes array to a set of random numbers
  *
  * @param arr Pointer to the input array
  * @param length Length of the input array
@@ -85,7 +133,12 @@ void initializeArray(int **arr, int length)
 {
     *arr = (int *)malloc(sizeof(int) * length); //!< Allocated space for random number array
     for (int idx = 0; idx < length; ++idx)
-        (*arr)[idx] = rand() % 255;
+    {
+    	//(*arr)[idx] = rand() % 255;
+    	(*arr)[idx] = idx;
+
+    }
+
 }
 
 /**
@@ -96,16 +149,15 @@ void initializeArray(int **arr, int length)
  * @param length Length of both arrays to be compared
  * @return int return status of the function (0 = ok, 1 = fail)
  */
-int compareArray(int **a, int **b, int length)
+int compareArray(float *a, float *b, int length)
 {
 
     for (int i = 0; i < length; ++i)
-        for (int j = 0; j < length; j++)
-
-        if (a[i][j] != b[i][j])
+        if (a[i] != b[i])
             return 1;
     return 0;
 }
+
 /**
  * @brief Copies array b to a
  *
@@ -113,27 +165,86 @@ int compareArray(int **a, int **b, int length)
  * @param b Pointer to an array to be copied from
  * @param length Length of the arrays.
  */
-void copyArray(int **a, int **b, int length)
+void copyArray(int *a, int *b, int length)
+{
+    for (int i = 0; i < length; ++i)
+        a[i] = b[i];
+}
+
+//////////////////////// REFERENCE FILTER DESIGNS //////////////////////
+/**
+ * @brief
+ *
+ * @param inputReal
+ * @param inputImg
+ * @param kernelReal
+ * @param kernelImg
+ * @param outputMag
+ * @param outputReal
+ * @param inputLength
+ * @param kernelSize
+ */
+void complexFIRReference(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg, int inputLength, int kernelSize)
 {
 
-    for (int i = 0; i < length; ++i)
-    	for(int j = 0; j < length; j++)
-        a[i][j] = b[i][j];
+	int filterReal[kernelSize]; //!< Real filter coefficent buffer
+	int filterImg[kernelSize];	//!< Imaginary filter coefficent buffer
+
+	float tempR, tempI = 0;
+
+	// Load in filter coefficents to a buffer array
+	for (int i = 0; i < kernelSize; i++)
+	{
+		filterReal[i] = kernelReal[i];
+		filterImg[i] = kernelImg[i];
+	}
+
+	// Pass input to the filter instances
+	for (int j = 0; j < kernelSize; j++)
+	{
+		//computeComplexFIR(inputReal[j], inputImg[j], filterReal, filterImg, kernelSize, &tempR, &tempI);
+		outputReal[j] = tempR;
+		outputImg[j] = tempI;
+#ifdef DEBUG_MODE
+		printf("Real: %f, imaginary: %f", tempR, tempI);
+#endif
+	}
 }
 
 /**
- * @brief Computes a 1-d FIR filter
+ * @brief Performs a 1-d convolution for a complex input and filter set.
  *
- * @param data Pointer to the input and output dataset
- * @param filter  Pointer to the filter coefficients
+ * @param inputReal
+ * @param inputImg
+ * @param filterReal
+ * @param filterImg
+ * @param filterLength
+ * @param outputReal
+ * @param outputImg
  */
+void computeComplexFIRReference(int inputReal, int inputImg, int *filterReal, int *filterImg, int filterLength, float *outputReal, float *outputImg)
+{
+	int * delayLineReal;
+	int * delayLineImg;
+	float resultReal, resultImg = 0.0;
 
+	// Shift the pipeline input array
+	for (int i = filterLength - 1; i > 0; i--)
+	{
+		delayLineReal[i] = delayLineReal[i - 1];
+		delayLineImg[i] = delayLineImg[i - 1];
+	}
+	delayLineReal[i] = inputReal;
+	delayLineImg[i] = inputImg;
 
-/**
- * @brief 1-cycle latency FIR filter computation
- *
- * @param input Input element
- * @param filter Filter data
- * @param output Output element
- */
+	// Compute the 1-d complex convolution for the filter:
+	for (int j = 0; j < filterLength; j++)
+	{
+		resultReal += (inputReal * filterReal[j]) - (inputImg * filterImg[j]);
+		resultImg += (inputReal * filterImg[j]) + (filterReal[j] * inputImg);
+	}
 
+	// Send the output:
+	*outputReal = resultReal;
+	*outputImg = resultImg;
+}

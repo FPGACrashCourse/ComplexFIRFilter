@@ -1,77 +1,93 @@
 
 #include <stdio.h>
-#include <math.h>
-#include <complex.h>
+
+#include "complexFIR.h"
 
 /**
- * @brief 
- * 
- * @param datasetLength 
- * @param filterLength 
- * @param data 
- * @param filter 
+ * @brief
+ *
+ * @param inputReal
+ * @param inputImg
+ * @param kernelReal
+ * @param kernelImg
+ * @param outputMag
+ * @param outputReal
+ * @param inputLength
+ * @param kernelSize
  */
-
-void complexFIR(int dataLength, int filterLength, int ** data, int ** filter)
+void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg, int inputLength, int kernelSize)
 {
-//	int ** filterCoeffs = (int**)malloc(filterLength * sizeof(int*)); //!< Filter coefficent storage space. Avoids needing connection to "filter" all the time
-	int ** filterCoeffs;
-	int ** rawOutput; //!< Single element output of the filter
 
-	//Load complex coefficients
-	for(int i = 0; i < filterLength; i++)
+	printf("Start of hardware FIR...\n");
+	int filterReal[kernelSize]; //!< Real filter coefficent buffer
+	int filterImg[kernelSize];	//!< Imaginary filter coefficent buffer
+
+	float tempR, tempI = 0.0;
+
+	// Load in filter coefficents to a buffer array
+	for (int i = 0; i < kernelSize; i++)
 	{
-		for(int j = 0; j < filterLength; j++)
-		{
-			filterCoeffs[i][j] = filter[i][j];
-		}
+		filterReal[i] = kernelReal[i];
+		filterImg[i] = kernelImg[i];
 	}
-
-	//Run the FIR filter
-	for(int k = 0; k < dataLength; k++)
+#ifdef DEBUG_MODE
+	printf("Loaded coefficents\n");
+	for(int a = 0; a < kernelSize; a++)
 	{
-		for(int j = 0; j < dataLength; j++)
-		{
-			computeComplexFIR(dataLength, filterLength, data[i][j], filter, rawOutput);
-			data[k][j] = **rawOutput;
-//			printf("Re = %d, Im = %d", rawOutpu
-		}
+		printf("filterReal[%d] = %d, filterImg[%d] = %d\n", a, filterReal[a], a, filterImg[a]);
 	}
+#endif
 
-	free(filterCoeffs); //Free the filterCoeffs to avoid a memory leakage
+	// Pass input to the filter instances
+
+	for (int j = 0; j < kernelSize; j++)
+	{
+		//computeComplexFIR(inputReal[j], inputImg[j], filterReal, filterImg, kernelSize, &tempR, &tempI);
+		computeComplexFIR(inputReal[j], inputImg[j], filterReal, filterImg, kernelSize, &tempR, &tempI);
+		outputReal[j] = tempR;
+		outputImg[j] = tempI;
+#ifdef DEBUG_MODE
+		printf("Output Real: %f, imaginary: %f\n", tempR, tempI);
+#endif
+	}
 }
 
-
 /**
- * @brief 
- * 
- * @param datasetLength 
- * @param filterLength 
- * @param input 
- * @param filter 
- * @param output 
+ * @brief Performs a 1-d convolution for a complex input and filter set.
+ *
+ * @param inputReal
+ * @param inputImg
+ * @param filterReal
+ * @param filterImg
+ * @param filterLength
+ * @param outputReal
+ * @param outputImg
  */
-void computeComplexFIR(int datasetLength, int filterLength, int input, int ** filter, int ** output)
+void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, int filterLength, float *outputReal, float *outputImg)
 {
-    static int ** delayLine;
-    int ** result; // = 0, technically.
+	int *delayLineReal;
+	int *delayLineImg;
+	float resultReal, resultImg = 0.0;
+	printf("Starting the hardware convolution:\n");
+	// Shift the pipeline input array
+	for (int i = filterLength - 1; i > 0; i--)
+	{
+		delayLineReal[i] = delayLineReal[i - 1];
+		delayLineImg[i] = delayLineImg[i - 1];
+		printf("delaylineReal = %d, delayLineImg = %d", delayLineReal[i], delayLineImg[i]);
 
-    for(int i = filterLength; i > 0; i--)
-    {
-        for(int j = filterLength; i > 0; i--)
-        {
-            delayLine[i][j] = delayLine[i - 1][j - 1];
-        }   
-    }
-    delayLine[0][0] = input;
+	}
+	delayLineReal[i] = inputReal;
+	delayLineImg[i] = inputImg;
 
-    for(int k = 0; k < filterLength; k++)
-    {
-        for(int j = 0; j < filterLength; j++)
-        {
-            result[0][0] += delayLine[k][j] * filter[k][j];
-        }
-    }
+	// Compute the 1-d complex convolution for the filter:
+	for (int j = 0; j < filterLength; j++)
+	{
+		resultReal += (inputReal * filterReal[j]) - (inputImg * filterImg[j]);
+		resultImg += (inputReal * filterImg[j]) + (filterReal[j] * inputImg);
+	}
 
-    **output = **result;
+	// Send the output:
+	*outputReal = resultReal;
+	*outputImg = resultImg;
 }
