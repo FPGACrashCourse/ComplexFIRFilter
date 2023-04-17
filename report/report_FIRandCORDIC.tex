@@ -1,0 +1,180 @@
+\documentclass[11pt]{report}
+\usepackage[a4paper, total={6in, 8.5in}]{geometry}
+\usepackage{authblk}
+\usepackage{graphicx}
+\usepackage[section]{placeins}
+\usepackage[toc,page]{appendix}
+\usepackage{setspace}
+\usepackage{acro}
+\usepackage{textcomp}
+\usepackage{multicol}
+\usepackage{blindtext}
+\usepackage{caption}
+\usepackage[table,xcdraw]{xcolor}
+
+% Graphs and plots
+\usepackage{pgf,pgfplots,pgfplotstable}
+\usepackage{SIunits}
+
+\renewcommand{\chaptername}{Part}
+
+\pgfplotsset{compat=newest} % Allows placing the legend below the plot
+
+
+% ----------  	VERILOG CODE LANGUAGE CONFIGURATION     ----------------------------------
+% Adapted from https://tex.stackexchange.com/questions/377122/typesetting-for-a-verilog-lstinput
+\usepackage{xcolor}
+\usepackage{listings}
+\definecolor{vgreen}{RGB}{104,180,104}
+\definecolor{vblue}{RGB}{20, 50, 250}
+\definecolor{vorange}{RGB}{255,143,102}
+
+\lstdefinestyle{verilog-style}
+{
+    language=Verilog,
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{vblue},
+    identifierstyle=\color{black},
+    commentstyle=\color{vgreen},
+    numbers=left,
+    numberstyle=\tiny\color{black},
+    numbersep=10pt,
+    tabsize=8,
+    moredelim=*[s][\colorIndex]{[}{]},
+    literate=*{:}{:}1
+}
+
+\lstdefinestyle{c-style}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  basicstyle=\small\ttfamily
+  frame=L,
+  numbers=left,
+  numberstyle=\tiny\color{black},
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{vblue},
+  identifierstyle=\color{black},
+  commentstyle=\color{vgreen},
+  stringstyle=\color{orange},
+}
+
+\makeatletter
+\newcommand*\@lbracket{[}
+\newcommand*\@rbracket{]}
+\newcommand*\@colon{:}
+\newcommand*\colorIndex{%
+    \edef\@temp{\the\lst@token}%
+    \ifx\@temp\@lbracket \color{black}%
+    \else\ifx\@temp\@rbracket \color{black}%
+    \else\ifx\@temp\@colon \color{black}%
+    \else \color{vorange}%
+    \fi\fi\fi
+}
+\makeatother
+
+\usepackage{trace}
+% --------------------------END CODE DISPLAY CONFIG ----------------------------------------
+
+%Hyperlinks:
+\usepackage{hyperref}
+\hypersetup{
+    %bookmarks=true,         % show bookmarks bar?
+    unicode=false,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={FIR Filters in Vitis HLS},    % title
+    pdfauthor={Alexander Stepko, axstepko.com},     % author
+    pdfsubject={Implementation report},   % subject of the document
+    pdfcreator={axstepko},   % creator of the document
+    pdfproducer={Texifier}, % producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfnewwindow=true,      % links in the new PDF window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=blue,          % color of internal links (change box color with linkbordercolor)
+    citecolor=blue,        % color of links to bibliography
+    filecolor=cyan,         % color of file links
+    urlcolor=cyan        % color of external links
+}
+
+% -------------------------- ACRONYMS -----------------------------------------------
+
+\DeclareAcronym{CORDIC}{
+	short=CORDIC,
+	long=coordinate rotation digital computer
+}
+
+\DeclareAcronym{FPGA}{
+	short=FPGA,
+	long=field programmable gate array
+}
+
+\DeclareAcronym{FIR}{
+	short=FIR,
+	long=finite impulse response
+}
+\DeclareAcronym{HLS}{
+	short=HLS,
+	long=high-level synthesis
+}
+
+\DeclareAcronym{RTL}{
+	short=RTL,
+	long=register transfer level
+}
+
+\DeclareAcronym{WNS}{
+	short=WNS,
+	long=worst negative slack
+}
+
+% -------------------------- END ACRONYMS --------------------------------------------
+
+%------------------------------------------------------------
+%             TITLE SECTION
+%------------------------------------------------------------           
+\title{\normalsize{EE/CMPEN 417}\Large\\\textbf{Development of 1-D FIR Filter and CORDIC Vector Computation System}}
+\author{Alexander Stepko | \emph{axstepko@psu.edu}
+\\ Takdanai Simmara | \emph{tks5472@psu.edu}
+\\ Aly Abousen | \emph{abousen@psu.edu}}
+
+\affil{The Pennsylvania State University\\School of Electrical Engineering and Computer Science\\\normalsize{Instructor Zheyu Li, PhD. Candidate}}
+\date{\today}
+
+\renewcommand*\contentsname{Report Contents}
+
+\fboxsep = 0mm %padding thickness
+\fboxrule = 1.25pt %border thickness
+
+\begin{document}
+%\doublespacing
+\begin{titlepage}
+    \maketitle
+\end{titlepage}
+\begin{singlespace}
+    \tableofcontents
+\end{singlespace}
+\newpage
+\section*{Acronyms}
+\begin{multicols}{2}
+    \raggedright
+    \printacronyms[heading=none]
+\end{multicols}
+\listoffigures
+\listoftables
+\newpage
+
+%------------------------------------------------------------
+%                 INTRODUCTION  
+%------------------------------------------------------------
+\section{Introduction}
+
+\chapter{A Rudimentary \ac{FIR} Filter}
+
+\section{Hardware model}
+
+\end{document}
