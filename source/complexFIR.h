@@ -1,16 +1,11 @@
-#ifndef INCLUDES
-#define INCLUDES
+#ifndef COMPLEX_FIR_H
+#define COMPLEX_FIR_H
 #include <stdio.h>
 #include <math.h>
 
-#endif // Includes
+#define DEBUG_MODE //!< Enables rich debugging support within these functions
 
-#ifndef DEFINES
-#define DEFINES
-
-//#define DEBUG_MODE
-
-#define DEBUG_SIZE 25
+#define DEBUG_SIZE 25 //!< Constant-width known-values for debug.
 
 static int debugInputReal[DEBUG_SIZE] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static int debugInputImg[DEBUG_SIZE] = {
@@ -48,4 +43,4 @@ static int debugCoeffImg[DEBUG_SIZE] = {25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 
 void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg, int inputLength, int kernelSize);
 void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, int filterLength, int *delayLineReal, int *delayLineImg, float *outputReal, float *outputImg);
 
-#endif // Defines
+#endif // COMPLEX_FIR_H
