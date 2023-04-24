@@ -29,19 +29,28 @@
  * @param outputReal Real part of filter output
  * @param outputImg Imaginary part of filter output
  */
-void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg)
+void complexFIR(int inputReal[FILTER_SIZE], int inputImg[FILTER_SIZE], int kernelReal[FILTER_SIZE], int kernelImg[FILTER_SIZE], float outputReal[FILTER_SIZE], float outputImg[FILTER_SIZE])
 {
+
+#pragma HLS ARRAY_PARTITION variable = inputReal type = complete
+#pragma HLS ARRAY_PARTITION variable = inputImg type = complete
+#pragma HLS ARRAY_PARTITION variable = kernelReal type = complete
+#pragma HLS ARRAY_PARTITION variable = kernelImg type = complete
+#pragma HLS ARRAY_PARTITION variable = outputReal type = complete
+#pragma HLS ARRAY_PARTITION variable = outputImg type = complete
+
 #ifdef FIR_DEBUG_MODE
     printf("Start of hardware FIR...\n");
 #endif
-    int filterReal[FILTER_SIZE]; //!< Filter coefficent buffer (real)
-    int filterImg[FILTER_SIZE];  //!< Filter coefficent buffer (imaginary)
+    int filterReal[FILTER_SIZE]; //!< Filter coefficient buffer (real)
+    int filterImg[FILTER_SIZE];  //!< Filter coefficient buffer (imaginary)
 
     float tempR, tempI; //!< Raw output from a filter pass
 
 LOAD_FILTER:
     for (int i = 0; i < FILTER_SIZE; i++)
     {
+#pragma HLS UNROLL
         filterReal[i] = kernelReal[i];
         filterImg[i] = kernelImg[i];
     }
@@ -57,7 +66,8 @@ LOAD_FILTER:
 COMPUTE:
     for (int k = 0; k < FILTER_SIZE; k++)
     {
-        // Perform a single pass of an input with the coefficents:
+#pragma HLS PIPELINE
+        // Perform a single pass of an input with the coefficients:
         computeComplexFIR(inputReal[k], inputImg[k], filterReal, filterImg, &tempR, &tempI);
         outputReal[k] = tempR;
         outputImg[k] = tempI;
@@ -72,24 +82,30 @@ COMPUTE:
  *
  * @param inputReal Real part of input sample
  * @param inputImg Imaginary part of input sample
- * @param filterReal Real part of filter coefficents
- * @param filterImg Imaginary part of filter coefficents
+ * @param filterReal Real part of filter coefficients
+ * @param filterImg Imaginary part of filter coefficients
  * @param filterLength Length of the filter
- * @param delayLineReal Real part of pipleine delay component
+ * @param delayLineReal Real part of pipeline delay component
  * @param delayLineImg Imaginary part of pipeline delay component
  * @param outputReal Real part of discrete output
  * @param outputImg Imaginary part of discrete output
  */
-void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, float *outputReal, float *outputImg)
+void computeComplexFIR(int inputReal, int inputImg, int filterReal[FILTER_SIZE], int filterImg[FILTER_SIZE], float *outputReal, float *outputImg)
 {
-    float resultReal, resultImg = 0.0; //!< Temporary result hold for the filter pass
+#pragma HLS PIPELINE
+    float resultReal[FILTER_SIZE], resultImg[FILTER_SIZE] = {}; //!< Temporary result hold for the filter pass
+
 
     static int delayLineReal[FILTER_SIZE] = {}; //!< Input pipeline delay buffer (real)
     static int delayLineImg[FILTER_SIZE] = {};  //!< Input pipeline delay buffer (imaginary
 
+#pragma HLS ARRAY_PARTITION variable = delayLineReal type = complete
+#pragma HLS ARRAY_PARTITION variable = delayLineImg type = complete
+
 PIPELINE_DELAY:
     for (int i = FILTER_SIZE - 1; i >= 1; i--)
     {
+#pragma HLS UNROLL
         // Iterate backwards through the array to shift to the right.
         delayLineReal[i] = delayLineReal[i - 1];
         delayLineImg[i] = delayLineImg[i - 1];
@@ -98,17 +114,23 @@ PIPELINE_DELAY:
     delayLineReal[0] = inputReal;
     delayLineImg[0] = inputImg;
 
-FILTER_PASS:
+    // Compute the filter output for each tap simultaneously
+FILTER_TAPS:
     for (int j = 0; j < FILTER_SIZE; j++)
     {
-        // Calculate the real and imaginary parts of the convolution
-        // output using the filter coefficients and the delay line.
-        resultReal += (delayLineReal[j] * filterReal[j]) - (delayLineImg[j] * filterImg[j]);
-        resultImg += (delayLineReal[j] * filterImg[j]) + (filterReal[j] * delayLineImg[j]);
+#pragma HLS UNROLL
+        resultReal[j] = (delayLineReal[j] * filterReal[j]) - (delayLineImg[j] * filterImg[j]);
+        resultImg[j] = (delayLineReal[j] * filterImg[j]) + (filterReal[j] * delayLineImg[j]);
     }
 
-    // Send the output
-    // Update the output pointers with the computed real and imaginary parts
-    *outputReal = resultReal;
-    *outputImg = resultImg;
+    // Sum up the results and send the output
+SUM_RESULTS:
+    for (int k = 1; k < FILTER_SIZE; k++)
+    {
+#pragma HLS UNROLL
+        resultReal[0] += resultReal[k];
+        resultImg[0] += resultImg[k];
+    }
+    *outputReal = resultReal[0];
+    *outputImg = resultImg[0];
 }

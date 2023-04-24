@@ -15,6 +15,9 @@ static int debugCoeffReal[DEBUG_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 
 static int debugCoeffImg[DEBUG_SIZE] = {25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
 
-void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg);
-void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, float *outputReal, float *outputImg);
+void complexFIR(int inputReal[FILTER_SIZE], int inputImg[FILTER_SIZE], int kernelReal[FILTER_SIZE], int kernelImg[FILTER_SIZE], float outputReal[FILTER_SIZE], float outputImg[FILTER_SIZE]);
+void computeComplexFIR(int inputReal, int inputImg, int filterReal[FILTER_SIZE], int filterImg[FILTER_SIZE], float *outputReal, float *outputImg);
+
+
+
 #endif // COMPLEX_FIR_H
