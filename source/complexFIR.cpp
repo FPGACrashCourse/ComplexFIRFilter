@@ -28,53 +28,40 @@
  * @param kernelImg Pointer to imaginary part of filter coefficents
  * @param outputReal Real part of filter output
  * @param outputImg Imaginary part of filter output
- * @param inputLength Length of the input dataset
- * @param kernelSize Length of the filter coefficent dataset
  */
-void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg, int inputLength, int kernelSize)
+void complexFIR(int *inputReal, int *inputImg, int *kernelReal, int *kernelImg, float *outputReal, float *outputImg)
 {
-#ifdef DEBUG_MODE
+#ifdef FIR_DEBUG_MODE
     printf("Start of hardware FIR...\n");
 #endif
-    int filterReal[kernelSize]; //!< Filter coefficent buffer (real)
-    int filterImg[kernelSize];  //!< Filter coefficent buffer (imaginary)
-
-    int delayLineReal[kernelSize]; //!< Input pipeline delay buffer (real)
-    int delayLineImg[kernelSize];  //!< Input pipeline delay buffer (imaginary)
-    // ^^ These must remain in the top-level processing function to retain "static" qualities when instantiating multiple filter passes.
+    int filterReal[FILTER_SIZE]; //!< Filter coefficent buffer (real)
+    int filterImg[FILTER_SIZE];  //!< Filter coefficent buffer (imaginary)
 
     float tempR, tempI; //!< Raw output from a filter pass
 
 LOAD_FILTER:
-    for (int i = 0; i < kernelSize; i++)
+    for (int i = 0; i < FILTER_SIZE; i++)
     {
         filterReal[i] = kernelReal[i];
         filterImg[i] = kernelImg[i];
     }
 
-PIPELINE_DELAY_ARRAY_INIT:
-    for (int j = 0; j < kernelSize; j++)
-    {
-        delayLineReal[j] = 0;
-        delayLineImg[j] = 0;
-    }
-
-#ifdef DEBUG_MODE
+#ifdef FIR_DEBUG_MODE
     printf("Loaded coefficients:\n");
-    for (int a = 0; a < kernelSize; a++)
+    for (int a = 0; a < FILTER_SIZE; a++)
     {
         printf("filterReal[%d] = %d, filterImg[%d] = %d\n", a, filterReal[a], a, filterImg[a]);
     }
 #endif
 
 COMPUTE:
-    for (int k = 0; k < inputLength; k++)
+    for (int k = 0; k < FILTER_SIZE; k++)
     {
         // Perform a single pass of an input with the coefficents:
-        computeComplexFIR(inputReal[k], inputImg[k], filterReal, filterImg, kernelSize, delayLineReal, delayLineImg, &tempR, &tempI);
+        computeComplexFIR(inputReal[k], inputImg[k], filterReal, filterImg, &tempR, &tempI);
         outputReal[k] = tempR;
         outputImg[k] = tempI;
-#ifdef DEBUG_MODE
+#ifdef FIR_DEBUG_MODE
         printf("outReal = %f, outImg = %f\n", tempR, tempI);
 #endif
     }
@@ -93,12 +80,15 @@ COMPUTE:
  * @param outputReal Real part of discrete output
  * @param outputImg Imaginary part of discrete output
  */
-void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, int filterLength, int *delayLineReal, int *delayLineImg, float *outputReal, float *outputImg)
+void computeComplexFIR(int inputReal, int inputImg, int *filterReal, int *filterImg, float *outputReal, float *outputImg)
 {
     float resultReal, resultImg = 0.0; //!< Temporary result hold for the filter pass
 
+    static int delayLineReal[FILTER_SIZE] = {}; //!< Input pipeline delay buffer (real)
+    static int delayLineImg[FILTER_SIZE] = {};  //!< Input pipeline delay buffer (imaginary
+
 PIPELINE_DELAY:
-    for (int i = filterLength - 1; i >= 1; i--)
+    for (int i = FILTER_SIZE - 1; i >= 1; i--)
     {
         // Iterate backwards through the array to shift to the right.
         delayLineReal[i] = delayLineReal[i - 1];
@@ -109,7 +99,7 @@ PIPELINE_DELAY:
     delayLineImg[0] = inputImg;
 
 FILTER_PASS:
-    for (int j = 0; j < filterLength; j++)
+    for (int j = 0; j < FILTER_SIZE; j++)
     {
         // Calculate the real and imaginary parts of the convolution
         // output using the filter coefficients and the delay line.
