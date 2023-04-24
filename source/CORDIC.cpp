@@ -29,8 +29,8 @@ void bulkCordicConvert(hls::stream<int> &cos, hls::stream<int> &sin, float * mag
 		cosFixed = (FIXED_POINT)cosInt;
 		sinFixed = (FIXED_POINT)sinInt;
 		cordic(cosFixed, sinFixed, &outMag, &outTheta);
-		*theta = (float)outTheta;
-		*mag = (float)outMag;
+		theta[i] = (float)outTheta;
+		mag[i] = (float)outMag;
 #ifdef DEBUG_MODE
 		printf("CORDIC.cpp: Magnitude: %f, Phase: %f\n", (float)outMag, (float)outTheta);
 #endif
