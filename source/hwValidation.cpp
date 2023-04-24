@@ -10,14 +10,21 @@
  */
 #ifndef HW_VALIDATION_INCLUDES
 #define HW_VALIDATION_INCLUDES
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #endif // HW_VALIDATION_INCLUDES
+
+
 
 #ifndef HW_VALIDATION_DEPENDENCIES
 #define HW_VALIDATION_DEPENDENCIES
+
 #include "complexFIR.h"
 #include "CORDIC.h"
+#include "polarFIR.h"
+
 #endif // HW_VALIDATION_DEPENDENCIES
 
 #define HW_VALIDATION_DEBUG_MODE //!< Enable this to have verbose debug console output
