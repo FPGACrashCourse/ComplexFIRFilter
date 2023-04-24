@@ -1,3 +1,13 @@
+/**
+ * @file complexFIR.h
+ * @author Alex Stepko (axstepko.com)
+ * @brief Header file for a 1-d rectangular coordinate FIR filter
+ * @version 1.0
+ * @date 2023-04-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #ifndef COMPLEX_FIR_H
 #define COMPLEX_FIR_H
 #include <stdio.h>

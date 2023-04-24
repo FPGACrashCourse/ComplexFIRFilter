@@ -1,8 +1,9 @@
 /**
  * @file complexFIR.c
  * @author Alex Stepko (axstepko.com)
- * @brief Hardware-accelerated 1-d complex FIR filter
- * @version 0.1
+ * @brief Hardware-accelerated 1-d rectangular FIR filter
+ * @remark Outputs values in rectangular float form
+ * @version 1.0
  * @date 2023-04-16
  *
  * @copyright Copyright (c) 2023
