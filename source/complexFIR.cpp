@@ -30,9 +30,8 @@
  * @param outputReal Real part of filter output
  * @param outputImg Imaginary part of filter output
  */
-void complexFIR(int inputReal[FILTER_SIZE], int inputImg[FILTER_SIZE], int kernelReal[FILTER_SIZE], int kernelImg[FILTER_SIZE], float outputReal[FILTER_SIZE], float outputImg[FILTER_SIZE])
+void complexFIR(int inputReal[FILTER_SIZE], int inputImg[FILTER_SIZE], int kernelReal[FILTER_SIZE], int kernelImg[FILTER_SIZE], hls::stream<int> &outputReal, hls::stream<int> &outputImg)
 {
-
 #pragma HLS ARRAY_PARTITION variable = inputReal type = complete
 #pragma HLS ARRAY_PARTITION variable = inputImg type = complete
 #pragma HLS ARRAY_PARTITION variable = kernelReal type = complete
@@ -45,6 +44,10 @@ void complexFIR(int inputReal[FILTER_SIZE], int inputImg[FILTER_SIZE], int kerne
 #endif
     int filterReal[FILTER_SIZE]; //!< Filter coefficient buffer (real)
     int filterImg[FILTER_SIZE];  //!< Filter coefficient buffer (imaginary)
+
+#pragma HLS ARRAY_PARTITION variable=filterReal type=complete
+#pragma HLS ARRAY_PARTITION variable=filterImg type=complete
+
 
     float tempR, tempI; //!< Raw output from a filter pass
 
@@ -70,8 +73,12 @@ COMPUTE:
 #pragma HLS PIPELINE
         // Perform a single pass of an input with the coefficients:
         computeComplexFIR(inputReal[k], inputImg[k], filterReal, filterImg, &tempR, &tempI);
-        outputReal[k] = tempR;
-        outputImg[k] = tempI;
+
+        outputReal.write(tempR);
+        outputImg.write(tempI);
+
+        //outputReal[k] = tempR;
+        //outputImg[k] = tempI;
 #ifdef FIR_DEBUG_MODE
         printf("outReal = %f, outImg = %f\n", tempR, tempI);
 #endif
@@ -95,7 +102,6 @@ void computeComplexFIR(int inputReal, int inputImg, int filterReal[FILTER_SIZE],
 {
 #pragma HLS PIPELINE
     float resultReal[FILTER_SIZE], resultImg[FILTER_SIZE] = {}; //!< Temporary result hold for the filter pass
-
 
     static int delayLineReal[FILTER_SIZE] = {}; //!< Input pipeline delay buffer (real)
     static int delayLineImg[FILTER_SIZE] = {};  //!< Input pipeline delay buffer (imaginary

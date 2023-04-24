@@ -4,11 +4,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <ap_fixed.h>
+#include "hls_stream.h"
 
 #define FIXED_BITS_M 32
 #define FIXED_BITS_N 20
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 typedef ap_fixed<FIXED_BITS_M, FIXED_BITS_N> FIXED_POINT; //!< AP-Fixed datype for consistent calculation
 // typedef float FIXED_POINT; //!< Placeholder datatype for vscode development ease.
@@ -20,6 +21,7 @@ const FIXED_POINT cordicGain[MAX_DEPTH] = {0.7071067811865476, 0.632455532033675
 
 #define NUM_ITERATIONS 32 //!< Number of iterations for the rotational computer
 
-void cordic(FIXED_POINT cos, FIXED_POINT sin, FIXED_POINT *mag, FIXED_POINT *theta);
 
+void bulkCordicConvert(hls::stream<int> &cos, hls::stream<int> &sin, float * mag, float *theta, int convertSize);
+void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *theta);
 #endif // CORDIC_H

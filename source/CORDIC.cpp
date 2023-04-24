@@ -14,6 +14,29 @@
 
 #include "CORDIC.h"
 
+void bulkCordicConvert(hls::stream<int> &cos, hls::stream<int> &sin, float * mag, float *theta, int convertSize)
+{
+	FIXED_POINT cosFixed = 0.0;
+	int cosInt, sinInt;
+	FIXED_POINT sinFixed = 0.0;
+	FIXED_POINT outMag = 0.0;
+	FIXED_POINT outTheta = 0.0;
+	// Initialize a bunch of CORDIC's to convert the incoming data:
+	BULK_CORDIC: for(int i = 0; i < convertSize; i++)
+	{
+		cos.read(cosInt);
+		sin.read(sinInt);
+		cosFixed = (FIXED_POINT)cosInt;
+		sinFixed = (FIXED_POINT)sinInt;
+		cordic(cosFixed, sinFixed, &outMag, &outTheta);
+		*theta = (float)outTheta;
+		*mag = (float)outMag;
+#ifdef DEBUG_MODE
+		printf("CORDIC.cpp: Magnitude: %f, Phase: %f\n", (float)outMag, (float)outTheta);
+#endif
+	}
+}
+
 /**
  * @brief Rectangular to polar coordinate converter
  *
@@ -22,7 +45,7 @@
  * @param mag Output vector magnitude
  * @param theta Output vector angle (radians)
  */
-void cordic(FIXED_POINT cos, FIXED_POINT sin, FIXED_POINT *mag, FIXED_POINT *theta)
+void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *theta)
 {
         FIXED_POINT currentCos = cos;
         FIXED_POINT currentSin = sin;

@@ -35,6 +35,8 @@ int *hwInputReal;  //!< Hardware-accelerated array pointer real components
 int *hwInputImg;   //!< Hardware-accelerated array pointer imaginary components
 float *hwOutputReal; //!< Hardware-accelerated array pointer real components
 float *hwOutputImg;  //!< Hardware-accelerated array pointer imaginary components
+float *hwOutputMag; //!< Hardware-accelerated array pointer to the output magnitude
+float *hwOutputPhase; //!< Hardware-accelerated array pointer to the phase
 
 int *swInputReal;  //!< Softwae-accelerated array pointer real components
 int *swInputImg;   //!< Software-accelerated array pointer imaginary components
@@ -65,7 +67,7 @@ int main(void)
     printf("Filters complete.\n");
 #else
     printf("Running filters...\n");
-    complexFIR(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, hwOutputReal, hwOutputImg);
+    //complexFIR(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, hwOutputReal, hwOutputImg);
     complexFIRReference(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, swOutputReal, swOutputImg, LENGTH, LENGTH);
     printf("Filters complete.\n");
 #endif
@@ -85,7 +87,7 @@ int main(void)
 
 
 
-    printf("Running CORDIC:\n");
+    printf("Running CORDIC...\n");
     double cosDouble;
     double sinDouble;
 
@@ -100,6 +102,15 @@ int main(void)
     sinDouble = sin.to_double();
 
     printf("Fixed_point MAG = %s, ANG = %s\n", mag.to_string(10), theta.to_string(10));
+
+    printf("Running combo system...\n");
+    polarFir(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, hwOutputMag, hwOutputPhase, LENGTH);
+
+    for(int i = 0; i < LENGTH; i++)
+    {
+    	printf("Output magnitude: %f, phase: %f\n", hwOutputMag[i], hwOutputPhase[i]);
+    }
+
 	printf("---------------  End of validation program  ---------------\n");
     return 0;
 }
@@ -115,6 +126,7 @@ void init()
     initializeArray(&swInputReal, LENGTH);
     copyArray(hwInputReal, swInputReal, LENGTH);
 
+
     // Initialize the imaginary input arrays:
     initializeArray(&hwInputImg, LENGTH);
     initializeArray(&swInputImg, LENGTH);
@@ -125,12 +137,16 @@ void init()
     hwOutputImg = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
     swOutputReal = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
     swOutputImg = (float *)malloc(sizeof(float) * LENGTH); //!< Allocated space for random number array
+    hwOutputMag = (float* )malloc(sizeof(float) * LENGTH);
+    hwOutputPhase = (float* )malloc(sizeof(float) * LENGTH);
     for(int i = 0; i < LENGTH; i++)
     {
     	hwOutputReal[i] = 0.0;
     	hwOutputImg[i] = 0.0;
     	swOutputReal[i] = 0.0;
     	swOutputImg[i] = 0.0;
+    	hwOutputMag[i] = 0.0;
+    	hwOutputPhase[i] = 0.0;
     }
 }
 

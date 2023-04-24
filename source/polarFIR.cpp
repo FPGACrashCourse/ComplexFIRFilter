@@ -23,26 +23,30 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
 {
 
 // Define the system's AXI interface:
-
 // Data inputs:
-#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle = dataIn
-#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle = dataIn
+#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle=realIn
+#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle=imgIn
 
 // Filter inputs:
 #pragma HLS INTERFACE mode = m_axi port = filterReal offset = slave bundle = filter
 #pragma HLS INTERFACE mode = m_axi port = filterImg offset = slave bundle = filter
+#pragma HLS ARRAY_PARTITION variable=filterReal type=complete
+#pragma HLS ARRAY_PARTITION variable=filterImg type=complete
 
-// Cartesian outputs:
-#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle = dataOut
-#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle = dataOut
+// Polar outputs:
+#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle = realOut
+#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle = imgOut
 
-#pragma HLS DATAFLOW
+#pragma HLS INTERFACE mode = s_axilite port = inputLength
 
-    int kernelReal[FILTER_SIZE]     //!< Real filter coefficient storage location
-        int kernelImg[FILTER_SIZE]; //!< Imaginary filter coefficient storage location
+    int kernelReal[FILTER_SIZE]; //!< Real filter coefficient storage location
+    int kernelImg[FILTER_SIZE]; //!< Imaginary filter coefficient storage location
 
-    // Intiialize kernel with filter coefficients:
-    for (int i = 0; i < FILTER_SIZE; i++)
+#pragma HLS ARRAY_PARTITION variable=kernelReal type=complete
+#pragma HLS ARRAY_PARTITION variable=kernelImg type=complete
+
+    // Initialize kernel with filter coefficients:
+    FILTER_INIT:for (int i = 0; i < FILTER_SIZE; i++)
     {
 #pragma HLS UNROLL
         kernelReal[i] = filterReal[i];
@@ -52,4 +56,12 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
     //Declare stream objects:
     hls::stream<int> realStream;
     hls::stream<int> imgStream;
+#pragma HLS STREAM variable=realStream
+#pragma HLS STREAM variable=imgStream
+
+#pragma HLS DATAFLOW
+    //Declare the CORDIC and FIR, and connect them with the stream objects:
+    complexFIR(inputReal, inputImg, kernelReal, kernelImg, realStream, imgStream);
+    bulkCordicConvert(realStream, imgStream, outputMag, outputPhase, FILTER_SIZE);
+
 }
