@@ -56,6 +56,7 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
     //Declare stream objects:
     hls::stream<int> realStream;
     hls::stream<int> imgStream;
+
 #pragma HLS STREAM variable=realStream
 #pragma HLS STREAM variable=imgStream
 

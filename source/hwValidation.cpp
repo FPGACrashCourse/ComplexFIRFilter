@@ -85,8 +85,6 @@ int main(void)
     deinit();
     printf("Arrays freed.\n");
 
-
-
     printf("Running CORDIC...\n");
     double cosDouble;
     double sinDouble;
@@ -110,6 +108,11 @@ int main(void)
     {
     	printf("Output magnitude: %f, phase: %f\n", hwOutputMag[i], hwOutputPhase[i]);
     }
+
+
+
+
+
 
 	printf("---------------  End of validation program  ---------------\n");
     return 0;
