@@ -24,20 +24,20 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
 
 // Define the system's AXI interface:
 // Data inputs:
-#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle=realIn
-#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle=imgIn
+#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle=dataInputReal
+#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle=dataInputImg
 
 // Filter inputs:
-#pragma HLS INTERFACE mode = m_axi port = filterReal offset = slave bundle = filter
-#pragma HLS INTERFACE mode = m_axi port = filterImg offset = slave bundle = filter
-#pragma HLS ARRAY_PARTITION variable=filterReal type=complete
-#pragma HLS ARRAY_PARTITION variable=filterImg type=complete
+#pragma HLS INTERFACE mode = m_axi port = filterReal offset = slave bundle=filterInputReal
+#pragma HLS INTERFACE mode = m_axi port = filterImg offset = slave bundle=filterInputImg
+
 
 // Polar outputs:
-#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle = realOut
-#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle = imgOut
+#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle=magOut
+#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle=phaseOut
 
 #pragma HLS INTERFACE mode = s_axilite port = inputLength
+#pragma HLS INTERFACE mode = s_axilite port = return
 
     int kernelReal[FILTER_SIZE]; //!< Real filter coefficient storage location
     int kernelImg[FILTER_SIZE]; //!< Imaginary filter coefficient storage location
@@ -45,10 +45,12 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
 #pragma HLS ARRAY_PARTITION variable=kernelReal type=complete
 #pragma HLS ARRAY_PARTITION variable=kernelImg type=complete
 
+#pragma HLS ARRAY_PARTITION variable=filterReal type=complete
+#pragma HLS ARRAY_PARTITION variable=filterImg type=complete
+
     // Initialize kernel with filter coefficients:
     FILTER_INIT:for (int i = 0; i < FILTER_SIZE; i++)
     {
-#pragma HLS UNROLL
         kernelReal[i] = filterReal[i];
         kernelImg[i] = filterImg[i];
     }
