@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<autopilotfilemapping:AutoPilotFileMapping xmlns:autopilotfilemapping="www.autoesl.com/autopilotfilemapping">
+  <source>
+    <originFiles name="cordicExample.cpp" path="D:\ComplexFIRFilter\reference\class_examples\cordicExample.cpp"/>
+    <originFiles name="cordicExample.h" path="D:\ComplexFIRFilter\reference\class_examples\cordicExample.h"/>
+    <originFiles name="cordicExampleTop.cpp" path="D:\ComplexFIRFilter\reference\class_examples\cordicExampleTop.cpp"/>
+  </source>
+  <testbench>
+    <originFiles name="cordicExampleTB.cpp" path="D:\ComplexFIRFilter\reference\class_examples\cordicExampleTB.cpp"/>
+  </testbench>
+</autopilotfilemapping:AutoPilotFileMapping>
