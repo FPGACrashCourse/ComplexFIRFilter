@@ -21,15 +21,16 @@
 #ifndef HW_VALIDATION_DEPENDENCIES
 #define HW_VALIDATION_DEPENDENCIES
 
-#include "complexFIR.h"
-#include "CORDIC.h"
 #include "polarFIR.h"
 
 #endif // HW_VALIDATION_DEPENDENCIES
 
 #define HW_VALIDATION_DEBUG_MODE //!< Enable this to have verbose debug console output
 
-#define LENGTH 25 //!< Length of the array
+static int polarDebugInputReal[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static int polarDebugInputImg[] = {25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+#define LENGTH 25 //!< Length of the data array
 
 int *hwInputReal;  //!< Hardware-accelerated array pointer real components
 int *hwInputImg;   //!< Hardware-accelerated array pointer imaginary components
@@ -66,13 +67,13 @@ int main(void)
     complexFIRReference(swInputReal, swInputImg, debugCoeffReal, debugCoeffImg, swOutputReal, swOutputImg, LENGTH, LENGTH);
     printf("Filters complete.\n");
 #else
-    printf("Running filters...\n");
+    //printf("Running filters...\n");
     //complexFIR(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, hwOutputReal, hwOutputImg);
-    complexFIRReference(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, swOutputReal, swOutputImg, LENGTH, LENGTH);
-    printf("Filters complete.\n");
+    //complexFIRReference(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, swOutputReal, swOutputImg, LENGTH, LENGTH);
+    //printf("Filters complete.\n");
 #endif
 
-    printf("Comparing arrays...\n");
+    //printf("Comparing arrays...\n");
 //    if ((compareArray(hwOutputReal, swOutputReal, LENGTH) == 0) || (compareArray(hwOutputImg, swOutputImg, LENGTH) == 0))
 //    {
 //        printf("TEST FAILED. ELEMENTS DO NOT MATCH");
@@ -83,7 +84,7 @@ int main(void)
 //    }
 
     deinit();
-    printf("Arrays freed.\n");
+    //printf("Arrays freed.\n");
 
     printf("Running CORDIC...\n");
     double cosDouble;
@@ -94,15 +95,13 @@ int main(void)
     FIXED_POINT mag = 0.0;
     FIXED_POINT theta = 0.0;
     
-    cordic(cos, sin, &mag, &theta);
+    //cordic(cos, sin, &mag, &theta);
 
     cosDouble = cos.to_double();
     sinDouble = sin.to_double();
 
-    printf("Fixed_point MAG = %s, ANG = %s\n", mag.to_string(10), theta.to_string(10));
-
     printf("Running combo system...\n");
-    polarFir(debugInputReal, debugInputImg, debugCoeffReal, debugCoeffImg, hwOutputMag, hwOutputPhase, LENGTH);
+    polarFir(polarDebugInputReal, polarDebugInputImg, hwOutputMag, hwOutputPhase, LENGTH);
 
     for(int i = 0; i < LENGTH; i++)
     {

@@ -8,7 +8,7 @@
 #include "complexFIR.h"
 #include "datatypes.h"
 
-#define POLAR_FIR_DEBUG_MODE
+//#define POLAR_FIR_DEBUG_MODE
 
 void polarFir(int *inputReal, int *inputImg, float *outputMag, float *outputPhase, int inputLength);
 

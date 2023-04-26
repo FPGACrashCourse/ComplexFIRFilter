@@ -30,22 +30,33 @@
  * @param outputReal Real part of filter output
  * @param outputImg Imaginary part of filter output
  */
-void complexFIR(int *inputReal, int *inputImg, FIR_INT_INPUT kernelReal[FILTER_SIZE], FIR_INT_INPUT kernelImg[FILTER_SIZE], hls::stream<FIR_INT_OUTPUT> &outputReal, hls::stream<FIR_INT_OUTPUT> &outputImg, int filterLength)
+void complexFIR(int *inputReal, int *inputImg, hls::stream<FIR_INT_OUTPUT> &outputReal, hls::stream<FIR_INT_OUTPUT> &outputImg, int filterLength)
 {
 
 //Partition the arrays accordingly:
-//#pragma HLS ARRAY_PARTITION variable = inputReal type = complete
-//#pragma HLS ARRAY_PARTITION variable = inputImg type = complete
-//#pragma HLS ARRAY_PARTITION variable = kernelReal type = complete
-//#pragma HLS ARRAY_PARTITION variable = kernelImg type = complete
-//#pragma HLS ARRAY_PARTITION variable = outputReal type = complete
-//#pragma HLS ARRAY_PARTITION variable = outputImg type = complete
+#pragma HLS ARRAY_PARTITION variable = outputReal type = complete
+#pragma HLS ARRAY_PARTITION variable = outputImg type = complete
 
 #ifdef FIR_DEBUG_MODE
     printf("Start of hardware FIR...\n");
 #endif
 
-//Kernel/filter is set up in polarFir(); function, and passed as reference to the filter. No need to generate another local buffer.
+	FIR_INT_INPUT kernelImg[FILTER_SIZE]; //!< Imaginary filter coefficient storage location
+    FIR_INT_INPUT kernelReal[FILTER_SIZE]; //!< Real filter coefficient storage location
+
+#pragma HLS ARRAY_PARTITION variable=kernelReal type=complete
+#pragma HLS ARRAY_PARTITION variable=kernelImg type=complete
+
+    // Initialize kernel with filter coefficients, using data from the first 0 -> FILTER_SIZE-1 spaces
+#ifdef POLAR_FIR_DEBUG_MODE
+    printf("FILTER:\n");
+#endif
+    FILTER_INIT:for (int i = 0; i < FILTER_SIZE; i++)
+    {
+#pragma HLS UNROLL
+        kernelReal[i] = FIR_INT_INPUT(inputReal[i]);
+        kernelImg[i] = FIR_INT_INPUT(inputImg[i]);
+    }
 
 #ifdef FIR_DEBUG_MODE
     printf("complexFIR: Loaded coefficients:\n");
@@ -53,9 +64,6 @@ void complexFIR(int *inputReal, int *inputImg, FIR_INT_INPUT kernelReal[FILTER_S
     {
         printf("complexFIR: kernel [%d] = %d + j%d\n", a, kernelReal[a].to_int(), kernelImg[a].to_int());
     }
-#endif
-
-#ifdef FIR_DEBUG_MODE
     printf("complexFIR: Loaded inputs:\n");
     for(int b = 0; b < filterLength; b++)
     {
@@ -69,7 +77,7 @@ void complexFIR(int *inputReal, int *inputImg, FIR_INT_INPUT kernelReal[FILTER_S
 COMPUTE:
     for (int k = 0; k < filterLength; k++)
     {
-//#pragma HLS PIPELINE
+//#pragma HLS UNROLL factor = 2
     	FIR_INT_INPUT inTempReal = FIR_INT_INPUT(inputReal[FILTER_SIZE + k]);
     	FIR_INT_INPUT inTempImg = FIR_INT_INPUT(inputImg[FILTER_SIZE + k]);
 
@@ -108,19 +116,20 @@ void computeComplexFIR(FIR_INT_INPUT inputReal, FIR_INT_INPUT inputImg, FIR_INT_
 #pragma HLS ARRAY_PARTITION variable = delayLineReal type = complete
 #pragma HLS ARRAY_PARTITION variable = delayLineImg type = complete
 
-//#ifdef FIR_DEBUG_MODE
-//    printf("computeComplexFIR: Recieved input %d + j%d\n", inputReal.to_int(), inputImg.to_int());
-//#endif
+#ifdef FIR_DEBUG_MODE
+    printf("computeComplexFIR: Recieved input %d + j%d\n", inputReal.to_int(), inputImg.to_int());
+#endif
 
 PIPELINE_DELAY:
     for (int i = FILTER_SIZE - 1; i >= 1; i--)
     {
+#pragma HLS UNROLL
         // Iterate backwards through the array to shift to the right.
         delayLineReal[i] = delayLineReal[i - 1];
         delayLineImg[i] = delayLineImg[i - 1];
-//#ifdef FIR_DEBUG_MODE
-//        printf("computeComplexFIR: delay[%d] = %d + %di\n", i, delayLineReal[i].to_int(), delayLineImg[i].to_int());
-//#endif
+#ifdef FIR_DEBUG_MODE
+        printf("computeComplexFIR: delay[%d] = %d + %di\n", i, delayLineReal[i].to_int(), delayLineImg[i].to_int());
+#endif
     }
     // Add the new input sample to the beginning of the delay line arrays
     delayLineReal[0] = inputReal;
@@ -130,10 +139,10 @@ PIPELINE_DELAY:
 FILTER_TAPS:
     for (int j = 0; j < FILTER_SIZE; j++)
     {
+#pragma HLS PIPELINE
         resultReal += (delayLineReal[j] * filterReal[j]) - (delayLineImg[j] * filterImg[j]);
         resultImg += (delayLineReal[j] * filterImg[j]) + (filterReal[j] * delayLineImg[j]);
     }
-    //printf("result = %d + j%d\n", resultReal.to_int(), resultImg.to_int());
 
     //Send outputs of the filter pass
     *outputReal = resultReal;

@@ -112,6 +112,7 @@ void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *t
 ROTATOR:
         for (int i = 0; i < NUM_ITERATIONS; i++)
         {
+#pragma HLS PIPELINE
                 // Compute a shift iteration for the system:
                 FIXED_POINT cosShift = currentCos >> i;
                 FIXED_POINT sinShift = currentSin >> i;
