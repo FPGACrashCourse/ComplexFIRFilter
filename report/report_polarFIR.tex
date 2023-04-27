@@ -12,6 +12,13 @@
 \usepackage{caption}
 \usepackage[table,xcdraw]{xcolor}
 
+\usepackage{titlepic}[cc]
+
+\usepackage{bytefield}
+
+\usepackage{listings}
+
+\usepackage{xparse}
 \usepackage{amsmath}
 
 % Graphs and plots
@@ -46,21 +53,48 @@
     literate=*{:}{:}1
 }
 
-\lstdefinestyle{c-style}{
+\lstdefinestyle{c-style-old}{
   belowcaptionskip=1\baselineskip,
   breaklines=true,
   basicstyle=\small\ttfamily
-  frame=L,
   numbers=left,
   numberstyle=\tiny\color{black},
-  xleftmargin=\parindent,
-  language=C,
+  language=C++,
   showstringspaces=false,
   basicstyle=\footnotesize\ttfamily,
   keywordstyle=\color{vblue},
   identifierstyle=\color{black},
   commentstyle=\color{vgreen},
   stringstyle=\color{orange},
+  frame=single,
+  xleftmargin=2em,
+}
+
+\definecolor{lbcolor}{gray}{0.95}
+\definecolor{darkpurple}{hsb}{0.75, 1, 0.7}
+\definecolor{darkgreen}{rgb}{0,0.4,0}
+
+\lstdefinestyle{c-style}{
+  backgroundcolor=\color{lbcolor},
+  tabsize=4,
+  language=C++,
+  captionpos=b,
+  basicstyle=\small\ttfamily,
+  tabsize=3,
+  frame=lines,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  breaklines=true,
+  showstringspaces=false,
+  identifierstyle=\color{darkpurple},
+  keywordstyle=\color[rgb]{0,0,1},
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{red}
+  }
+
+\NewDocumentCommand{\codeword}{v}{%
+\texttt{\textcolor{blue}{#1}}%
 }
 
 \makeatletter
@@ -145,6 +179,8 @@
 \affil{The Pennsylvania State University\\School of Electrical Engineering and Computer Science\\\normalsize{Instructor Zheyu Li, PhD. Candidate}}
 \date{\today}
 
+\titlepic{\includegraphics{media/AS_initials_blk.png}}
+
 \renewcommand*\contentsname{Report Contents}
 
 \fboxsep = 0mm %padding thickness
@@ -171,10 +207,10 @@
 %------------------------------------------------------------
 %                 INTRODUCTION  
 %------------------------------------------------------------
-\section{Introduction}
+\chapter*{Introduction}
 This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. The target hardware for this report is a Xilinx Zynq-7000 series chipset, packaged on a Digilent Zedboard trainer kit.
 
-\subsection{Processor Chain Theories}
+\section{Processing chains}
 \subsubsection{FIR filter}\label{FIRtheory}
 
 The FIR filter is a fundamental technique used in countless systems in the medical, defense, academic, and consumer sectors. Moreover, a high-performance FIR filter is almost always necessary in a signal processing chain. Generically, the formula for a complex FIR filter is
@@ -248,10 +284,9 @@ i & $2^{-i}$ 	& Rotating Angle  	& Scaling Factor 	& CORDIC Gain 	\\ \hline \hli
 
 As noticed above, the CORDIC gain $K_i$ increases with each iteration. If we compute $K_i ^{-1}$, we then see that the gain decreases as iterations increase. This fact is only important in the sense that after a certain point of iterations, the gains are practically identical until the $10^{-9}$ decimal point. Essentially, beyond a certain number of iterations the precision of the algorithm plateaus at almost the exact correct value.
 
-This particular filter is crucial in countless industries, such as medical, defense, academic, and consumer sectors. Moreover, the usage of a \ac{FIR} filter is included in nearly every advanced signal processing chain. This lab explores the development of such a filter using Vitis HLS, an advanced \ac{HLS} synthesis tool that allows linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. The target hardware for this report is a Xilinx Zynq-7000 series chipset, packaged on a Digilent Zedboard trainer kit.
-
 \chapter{A Rudimentary \ac{FIR} Filter}
-The equations shown in section \ref{FIRtheory} for the FIR filter are now implemented in Vitis HLS as a 1-D convolution. The computation of a convolution is rather simple, taking into account the fact that we have complex numbers to multiply (the filter weights, and the raw data to be processed). Generically, for complex vectors
+
+The FIR filter is implemented in Vitis HLS, using equations shown in section \ref{FIRtheory} to compute the 1-D convolution. The filter inputs have been specified on a range of $[-50, 50]$, which includes the filter coefficients. The computation of a convolution is rather simple, taking into account the fact that we have complex numbers to multiply (the filter weights, and the raw data to be processed). Generically, for complex vectors
 \begin{equation}
 	a = \alpha + j\beta
 \end{equation}
@@ -267,13 +302,25 @@ we find their product $c = ab$ equivalent to
 This can be quickly translated into a processing algorithm shown below in Listing \ref{lst:FIRconv}.
 
 \begin{singlespace}
-    \lstinputlisting[breaklines=true, label={lst:FIRconv}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=125, linerange={125-131}]{../source/complexFIR.cpp}
+    \lstinputlisting[breaklines=true,
+     label={lst:FIRconv},
+      caption={Convolution algorithm},
+       style=c-style,
+        language=C++,
+         firstnumber=139,
+          linerange={139-145}]{../source/complexFIR.cpp}
 \end{singlespace}
 
 This algorithm is then instantiated across the whole dataset with the following function behavior:
 
 \begin{singlespace}
-    \lstinputlisting[breaklines=true, label={lst:FIRconv}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=70, linerange={70-85}]{../source/complexFIR.cpp}
+    \lstinputlisting[breaklines=true,
+     label={lst:FIRconv},
+      caption={Filter pass control},
+       style=c-style,
+        language=C++,
+         firstnumber=77,
+          linerange={77-91}]{../source/complexFIR.cpp}
 \end{singlespace}
 
 \section{Performance of the algorithm}
@@ -310,34 +357,171 @@ where $X_i$, $A_i$, $M_i$ are defined as
 	M_i = \sum_{i=0}^{numTaps} 4 = 4 * numTaps
 \end{equation}
 and subsequently 
-\begin{equation}
+\begin{equation}\label{FIRlatency}
 	Q = (1 + 2 + 4)numTaps = 7 * numTaps
 \end{equation}
  
- Assuming a filter size of $numTaps = 25$, we determine the latency to be approximately $Q$ = 175 cycles. This is, of course, just a single pass of the filter on a single datapoint, so multiple datapoints takes many more cycles. This has significant impact on the performance of the processing chain, and drastically increases system latency for a valid result. We synthesize an un-optimized result in 
+ Assuming a filter size of $numTaps = 25$, we determine the latency to be approximately $Q$ = 175 cycles. This is, of course, just a single pass of the filter on a single datapoint, so multiple datapoints takes many more cycles. This has significant impact on the performance of the processing chain, and drastically increases system latency for a valid result. We synthesize an un-optimized filter using standard \codeword{int} datatypes within the system. The utilizations results below in Figure \ref{fig:unoptimizedFIRutil}. 
  
+ \begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=0.8\textwidth]{media/xxxx.png}}
+ 		\caption{Un-optimized utilization report}
+ 		\label{fig:unoptimizedFIRutil}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
  
+ Note the high number of LUTs, FF, and DSPs necessary to run the design. The incredibly high utilization for the system has two problems. 1.) The design cannot be synthesized on the desired hardware target, and that chipset does not have enough resources. 2.) If enough hardware were available, the latency of over 130 cycles for the dataset is unacceptable for a realtime high performance system.
  
  \section{Optimization}
- To improve the performance of this algorithm, we leverage the \texttt{\#pragma HLS} collection of compiler directives. These directives suggests to the compiler that it should rewrite or restructure the compiled result to improve the performance of the algorithm.
+ To improve the performance of this algorithm, we leverage the \codeword{#pragma HLS} collection of compiler directives. These directives suggests to the compiler that it should rewrite or restructure the compiled result to improve the performance of the algorithm.
  
  \subsection{Unrolling}
-Perhaps one of the most basic operations employed in the HLS environment is loop unrolling. Loop unrolling exploits parallelism on the device, and is commonly paired with \texttt{for} loop bodies. The behavior of the process effectively duplicates copies of the arguments inside of the loop, and reduces the iteration depth of the loop itself. This optimization is applied below in Listing \ref{lst:FIRunroll}.
+Perhaps one of the most basic operations employed in the HLS environment is loop unrolling. Loop unrolling exploits parallelism on the device, and is commonly paired with \codeword{for} loop bodies. The behavior of the process effectively duplicates copies of the arguments inside of the loop, and reduces the iteration depth of the loop itself. This optimization is applied below in Listing \ref{lst:FIRunroll}.
 
 \begin{singlespace}
-    \lstinputlisting[breaklines=true, label={lst:FIRunroll}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=54, linerange={54-59}]{../source/complexFIR.cpp}
+    \lstinputlisting[breaklines=true,
+     label={lst:FIRunroll},
+     caption={Filter coefficient initialization},
+     style=c-style,
+     numbers=left,
+     language=C++,
+     firstnumber=54,
+     linerange={54-59}]{../source/complexFIR.cpp}
 \end{singlespace}
 
-\texttt{\#pragma HLS UNROLL} in line 56 completely unrolls the loop by a factor of \texttt{FILTER\_SIZE} (which in this design is 25 taps), and reduces the computational latency to 1 cycle.
+\codeword{#pragma HLS UNROLL} in line 56 (Listing \ref{lst:FIRunroll}) completely unrolls the loop by a factor of \codeword{FILTER_SIZE} (which in this design is 25 taps), and as such reduces the computational latency to 1 cycle. This drastically reduces the computational latency required to calculate the result, and allows the core of the algorithm to start more quickly.
 
-Another area this optimization is used is in the shift register within a computation of a filter pass itself.
+Another area this optimization is used is in the shift register within a computation of a filter pass itself. The shift register allows the system to exploit pipelined behavior, and allows data to be accessed in parallel. This is shown below in Listing \ref{lst:pipelineDelay}.
+
+\begin{singlespace}
+    \lstinputlisting[breaklines=true,
+     label={lst:pipelineDelay},
+     caption={Shift register},
+     style=c-style,
+     numbers=left,
+     language=C++,
+     firstnumber=123,
+     linerange={123-136}]{../source/complexFIR.cpp}
+\end{singlespace}
+
+\subsection{Pipelining}
+
+While the ability to unroll a loop is useful, the parallelism exploited by unrolling a loop requires more discrete hardware. Resources like DSPs on an FPGA are incredibly precious, and as such it is important to ensure they are used to their maximum potential.
+
+A commonplace method to increase throughput of a design in general is to pipeline the computational chain. This behavior is seen in nearly every modern-day processor, and enables high average resource utilization across the whole system. Of course, this also requires the system to be designed in such a manner conducive to pipeline architecture.
+
+In the case of the FIR filter, it is possible to pipeline the design to achieve near-single-cycle latency. This is accomplished via the shift register implemented in Listing \ref{lst:pipelineDelay}, and the usage of \codeword{#pragma HLS PIPELINE}. 
+
+It should be noted that the ability for a design to be pipelined also depends on parallel memory element access, and later sections will discuss this in greater detail.
+
+\codeword{#pragma HLS PIPELINE} effectively converts loops that are a deterministic length at compile time into a pipelined design. At compile time, this precompiler directive attempts to achieve an iteration interval of 1 (\codeword{II = 1}), if this is not possible, it attempts to find the shortest-possible iteration interval that successfully pipelines the design. 
+
+For example, consider the filter pass:
+
+\begin{singlespace}
+    \lstinputlisting[breaklines=true,
+     label={lst:FIRconv},
+      caption={Convolution algorithm},
+       style=c-style,
+        language=C++,
+         firstnumber=139,
+          linerange={139-145}]{../source/complexFIR.cpp}
+\end{singlespace}
+
+Without the precompiler directive \codeword{#pragma HLS PIPELINE} on line 142, this loop takes a large amount of time to compute. This amount is estimated in equation \ref{FIRlatency}. 
+
+Upon re-synthesis of the design with the precompiler directive the loop's performance is improved dramatically, reducing the number of cycles necessary to compute a result to an iteration interval of 1 (\codeword{II = 1}). This is a dramatic improvement in comparison to the old design. Additionally, the efficiency of the design also ensures that resources allocated for that element of the processing chain are at a maximal utilization.
+
+\subsection{Dataset manipulation}
+
+Perhaps not exactly ''optimization``, dataset manipulation in the HLS environment is the second step (first is a good design) to structure code for optimization. Standard C/C++ languages transfer data between functions as linear allocation. Consider an array \texttt{X} which contains $N$ elements. The array is typically organized in memory as a sequential set of data:
+\begin{figure}[h!]
+\begin{center}
+\begin{bytefield}{16}
+\bitbox{4}{\texttt{X[0]}} \bitbox{4}{\texttt{X[1]}} \bitbox{4}{$\dots$}\bitbox{4}{\texttt{X[N]}}
+\end{bytefield}
+
+\caption{Standard array format}
+\end{center}
+\end{figure}
+
+This structure works rather well for traditional linear programs, as it allows efficient allocation of the program memory. However, parallel access of the array is not possible, as the same chunk of memory would be referenced by multiple scheduled calls. This fails to access at the best, and crashes the system at the very worst. To mitigate this problem, it is possible to reshape the array into a format conducive to parallel access. 
+
+The usage of \codeword{#pragma HLS ARRAY_PARTITION} in the HLS environment provides the ability to transpose any given array with a variety of configurable parameters. A trivial method is to partition the array completely, resultant in the following data structure:
+
+\begin{figure}[h!]
+\begin{center}
+\begin{bytefield}{4}
+\bitbox{4}{\texttt{X[0]}}\\
+\bitbox{4}{\texttt{X[1]}}\\
+\bitbox{4}{$\dots$}\\
+\bitbox{4}{\texttt{X[N]}}\\
+\end{bytefield}
+\caption{Partitioned array (complete)}
+\label{fig:arrayPartComplete}
+\end{center}
+\end{figure}
+
+The structure shown in Figure \ref{fig:arrayPartComplete} utilizes complete partioning. This means that each element can be accessed in parallel at any time, without read/write conflicts. However, this also increases the number of storage elements necessary to allow this transposition. In situations where a complete partition is not viable or computationally necessary, it is possible to partition the array with a varying factor. For example, partitioning the array X with a factor of 3 achieves the following data structure:
+
+\begin{figure}[h!]
+\begin{center}
+\begin{bytefield}{12}
+\bitbox{4}{\texttt{X[0]}} \bitbox{4}{\texttt{X[1]}} \bitbox{4}{\texttt{X[2]}}\\
+\bitbox{4}{$\dots$} \bitbox{4}{$\dots$} \bitbox{4}{$\dots$}\\
+\bitbox{4}{$\dots$} \bitbox{4}{$\dots$} \bitbox{4}{$\dots$}\\
+\bitbox{4}{\texttt{X[N-3]}} \bitbox{4}{\texttt{X[N-1]}} \bitbox{4}{\texttt{X[N]}}\\
+\end{bytefield}
+\caption{Partitioned array (factor of 3)}
+\label{fig:arrayPartComplete}
+\end{center}
+\end{figure}
+\FloatBarrier
+
+This allows array elements to be accessed in multiples of three. To utilize the array in this manner, a factor of 3 should be present in the design when unrolling or pipelining. The advantages of higher-factor partitioning reduces the discrete hardware necessary to store an element of data, at the potential cost of increased design latency.
+
+Despite the advantages of higher-factor partitioning, the simplicity of the FIR filter, and its small number of taps, is conducive to complete array partitions on data in the system. For example, Listing \ref{lst:FIRarraypart} shows how the pipeline shift registers are partitioned.
+
+\begin{singlespace}
+    \lstinputlisting[breaklines=true,
+     label={lst:FIRarraypart},
+      caption={Convolution algorithm},
+       style=c-style,
+        language=C++,
+         firstnumber=113,
+          linerange={113-117}]{../source/complexFIR.cpp}
+\end{singlespace}
+
+\subsection{Datatypes}
+
+An interesting area for optimization in an HLS environment is the usage of arbitrary-width datatypes. In a traditional C/C++ environment, the amount of memory available usually provides no reason to use custom types. Additionally, because a traditional C program runs on a fixed-width data structure, anything other than 8/32/64/128-bit architecture is inefficient and often unnecessary.
+
+The difference between a traditional C program and a HLS product is that HLS products are synthesized into a product for deployment on an FPGA. Because FPGAs have fully reprogramable logic/DSP slices, it is possible to use data widths of any kind in a design.
+
+That being said, there are a few technical constraints or considerations to be made in choosing the size of a given datatype. The DSPs on an FPGA are limited in their input data sizes. In the case of Xilinx's DSP48 on the Zynq-7000 series FPGA, it is possible to multiply a 25 and 18 bit number on a single DSP slice. Therefore, operations that exceed 25x18 bits will leverage multiple DSPs to compute the result. Standard \codeword{int} and \codeword{float} datatypes require 32 bits to calculate, and therefore would require at least 3 DSP slices to compute.
+
+Another consideration is the input/output range of the design, in addition to signage or required precision. It is possible to compute the number of bits required for any given number using the equation
+
+\begin{equation}
+	K = \lceil log_2{x} \rceil
+\end{equation}
+
+where $K$ is the computed number of bits, and $x$ is the number in question. If $x$ is a decimal number, it's necessary to shift the number's decimal to the end of the decimal for the calculation. For example the number $x = 9000$ requires 14 bits, and the number $x = 10.0025$ requires 17 bits.
+
+We can apply the same concepts to the FIR filter
+
+\subsubsection{Arbitrary precision}
+
+The HLS environment offers the \codeword{ap_int.h} and \codeword{ap_fixed} libraries, which permit the creation of arbitrary-width integer and fixed-point datatypes.
 
 
 
+\subsection{Optimization results}
 
-
-\section{Hardware model}
-
+Optimization performed to the algorithm has dramatically reduced the design's latency, and utilization
 \end{document}
 
 
