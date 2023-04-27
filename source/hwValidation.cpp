@@ -27,10 +27,10 @@
 
 #define HW_VALIDATION_DEBUG_MODE //!< Enable this to have verbose debug console output
 
-static int polarDebugInputReal[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static int polarDebugInputImg[] = {25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int polarDebugInputReal[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static int polarDebugInputImg[] = {25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-#define LENGTH 25 //!< Length of the data array
+#define LENGTH 27 //!< Length of the data array
 
 int *hwInputReal;  //!< Hardware-accelerated array pointer real components
 int *hwInputImg;   //!< Hardware-accelerated array pointer imaginary components
@@ -105,7 +105,7 @@ int main(void)
 
     for(int i = 0; i < LENGTH; i++)
     {
-    	printf("Output magnitude: %f, phase: %f\n", hwOutputMag[i], hwOutputPhase[i]);
+    	printf("Output magnitude[%d]: %f, phase: %f\n", i, hwOutputMag[i], hwOutputPhase[i]);
     }
 
 
