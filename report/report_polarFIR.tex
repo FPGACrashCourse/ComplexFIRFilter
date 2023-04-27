@@ -276,7 +276,7 @@ This algorithm is then instantiated across the whole dataset with the following 
     \lstinputlisting[breaklines=true, label={lst:FIRconv}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=70, linerange={70-85}]{../source/complexFIR.cpp}
 \end{singlespace}
 
-\subsection{Performance of the algorithm}
+\section{Performance of the algorithm}
 The performance of the algorithm can be broadly categorized into two major components:
 
 \begin{quote}
@@ -314,14 +314,23 @@ and subsequently
 	Q = (1 + 2 + 4)numTaps = 7 * numTaps
 \end{equation}
  
- Assuming a filter size of $numTaps = 25$, we determine the latency to be approximately $Q$ = 175 cycles. This is, of course, just a single pass of the filter on a single datapoint, so multiple datapoints takes many more cycles. This has significant impact on the performance of the processing chain, and drastically increases system latency for a valid result. 
+ Assuming a filter size of $numTaps = 25$, we determine the latency to be approximately $Q$ = 175 cycles. This is, of course, just a single pass of the filter on a single datapoint, so multiple datapoints takes many more cycles. This has significant impact on the performance of the processing chain, and drastically increases system latency for a valid result. We synthesize an un-optimized result in 
  
- To improve the performance of this algorithm, 
+ 
+ 
+ \section{Optimization}
+ To improve the performance of this algorithm, we leverage the \texttt{\#pragma HLS} collection of compiler directives. These directives suggests to the compiler that it should rewrite or restructure the compiled result to improve the performance of the algorithm.
+ 
+ \subsection{Unrolling}
+Perhaps one of the most basic operations employed in the HLS environment is loop unrolling. Loop unrolling exploits parallelism on the device, and is commonly paired with \texttt{for} loop bodies. The behavior of the process effectively duplicates copies of the arguments inside of the loop, and reduces the iteration depth of the loop itself. This optimization is applied below in Listing \ref{lst:FIRunroll}.
 
+\begin{singlespace}
+    \lstinputlisting[breaklines=true, label={lst:FIRunroll}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=54, linerange={54-59}]{../source/complexFIR.cpp}
+\end{singlespace}
 
+\texttt{\#pragma HLS UNROLL} in line 56 completely unrolls the loop by a factor of \texttt{FILTER\_SIZE} (which in this design is 25 taps), and reduces the computational latency to 1 cycle.
 
-
-
+Another area this optimization is used is in the shift register within a computation of a filter pass itself.
 
 
 
