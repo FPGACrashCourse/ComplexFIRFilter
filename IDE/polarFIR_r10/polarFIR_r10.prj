@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="ASCII"?>
 <sdkproject:SdkProject xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sdkproject="http://www.xilinx.com/sdkproject" name="polarFIR_r10" location="D:/ComplexFIRFilter/polarFIR_r10" platform="D:/ComplexFIRFilter/polarFIRhw_r12/export/polarFIRhw_r12/polarFIRhw_r12.xpfm" platformUID="xilinx:zedboard::0.0(custom)" systemProject="polarFIR_r10_system" sysConfig="polarFIRhw_r12" runtime="cpp" cpu="standalone_ps7_cortexa9_0" cpuInstance="ps7_cortexa9_0" os="standalone" mssSignature="72af4ac658892f6d44f7908cc6a6a9f3">
-  <configuration name="Debug" id="xilinx.gnu.armv7.exe.debug.1675307944" dirty="true">
+  <configuration name="Debug" id="xilinx.gnu.armv7.exe.debug.1675307944">
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
     <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>
-  <configuration name="Release" id="xilinx.gnu.armv7.exe.release.1451836051" dirty="true">
+  <configuration name="Release" id="xilinx.gnu.armv7.exe.release.1451836051">
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
+    <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>
   <template appTemplateName="hello_world"/>
 </sdkproject:SdkProject>

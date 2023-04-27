@@ -26,10 +26,13 @@
 
 #define MAIN_DEBUG_MODE
 
+//#define RANDOM_INPUT_GEN
+
+//#define WORST_CASE 50
 
 
 #define COEFF_LENGTH 25
-#define DATA_LENGTH 25
+#define DATA_LENGTH 30
 #define INPUT_LENGTH COEFF_LENGTH + DATA_LENGTH
 
 int main()
@@ -48,38 +51,56 @@ int main()
 
     int inputReal[INPUT_LENGTH] = {};
     int inputImg[INPUT_LENGTH] = {};
-
-// Generate coefficient input:
+#ifdef WORST_CASE
+    COEFF_GEN:for (int i = 0; i < COEFF_LENGTH; i++)
+        {
+            inputReal[i] = WORST_CASE;
+            inputImg[i] = WORST_CASE;
+        }
+#else
 COEFF_GEN:for (int i = 0; i < COEFF_LENGTH; i++)
     {
         inputReal[i] = COEFF_LENGTH - i;
         inputImg[i] = i + 1;
-#ifdef MAIN_DEBUG_MODE
-        printf("coeff = %d + j%d\n", inputReal[i], inputImg[i]);
-#endif
     }
+#endif
 // Generate data input:
+#ifdef RANDOM_INPUT_GEN
 INPUT_GEN:for (int i = 0; i < DATA_LENGTH; i++)
     {
         inputReal[COEFF_LENGTH + i] = rand() % 50;
-        inputImg[COEFF_LENGTH + i] = rand() % 50;
-#ifdef MAIN_DEBUG_MODE
-        printf("input[%d] = %d + j%d\n", i, inputReal[COEFF_LENGTH + i], inputImg[COEFF_LENGTH + i] );
-#endif
+        inputImg[COEFF_LENGTH + i] = -1 * rand() * rand() % 50;
     }
+#else
+INPUT_GEN:
+	for(int i = 0; i < DATA_LENGTH; i++)
+	{
+		inputReal[COEFF_LENGTH + i] = 1;
+		inputImg[COEFF_LENGTH + i] = 0;
+	}
+#endif
 
-    // Locate and clean memory for the peripheral
-    u64 *INPUT_REAL_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR + 0x20000;
-    u64 *INPUT_IMG_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR;
-    memset(INPUT_IMG_BUFFER, 0, INPUT_LENGTH << 2);
-    memset(INPUT_REAL_BUFFER, 0, INPUT_LENGTH << 2);
+#ifdef WORST_CASE
+#ifndef RANDOM_INPUT_GEN
+	INPUT_GEN:
+		for(int i = 0; i < DATA_LENGTH; i++)
+		{
+			inputReal[COEFF_LENGTH + i] = 50;
+			inputImg[COEFF_LENGTH + i] = 50;
+		}
+#endif
+#endif
 
-    // Allocate memory for the peripheral outputs:
-    // Output size is the same as the input data size.
-    // Memory is cleaned explicitly with the = {} field.
-    u64 hw_outputMag[DATA_LENGTH] = {};
-    u64 hw_outputPhase[DATA_LENGTH] = {};
+    // Locate and clean memory for the peripheral I/O:
+	u32 *INPUT_REAL_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR;
+	u32 *INPUT_IMG_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR + 0x20000;
+	u32 *HW_MAG_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR +  0x20000 + 0x20000;
+	u32 *HW_PHASE_BUFFER = XPAR_PS7_DDR_0_S_AXI_BASEADDR + 0x20000+ 0x20000 + 0x20000;
 
+    memset(INPUT_IMG_BUFFER, 0, (INPUT_LENGTH << 2));
+    memset(INPUT_REAL_BUFFER, 0, (INPUT_LENGTH << 2));
+    memset(HW_MAG_BUFFER, 0, (DATA_LENGTH << 2));
+    memset(HW_PHASE_BUFFER, 0, (DATA_LENGTH << 2));
 
 INPUT_BUFF_SET:
     for (int i = 0; i < INPUT_LENGTH; i++)
@@ -88,15 +109,17 @@ INPUT_BUFF_SET:
         INPUT_REAL_BUFFER[i] = inputReal[i];
     }
 
-    XPolarfir_Set_inputReal(&polarFIRinst, INPUT_REAL_BUFFER);
-    XPolarfir_Set_inputImg(&polarFIRinst, INPUT_IMG_BUFFER);
+    XPolarfir_Set_inputReal(&polarFIRinst, (u64)INPUT_REAL_BUFFER);
+    XPolarfir_Set_inputImg(&polarFIRinst, (u64)INPUT_IMG_BUFFER);
     XPolarfir_Set_inputLength(&polarFIRinst, (u32)DATA_LENGTH);
+    XPolarfir_Set_outputMag(&polarFIRinst, (u64)HW_MAG_BUFFER);
+    XPolarfir_Set_outputPhase(&polarFIRinst, (u64)HW_PHASE_BUFFER);
 
 #ifdef MAIN_DEBUG_MODE
     printf("Filter set with\n");
     for (int i = 0; i < COEFF_LENGTH; i++)
     {
-        printf("coeff[%d] = %d + j%d\n", i, inputReal[i], inputImg[i]);
+        printf("coeff[%d] = %d + j%d\n", i, INPUT_REAL_BUFFER[i], INPUT_IMG_BUFFER[i]);
     }
 
     printf("Input set with\n");
@@ -106,6 +129,8 @@ INPUT_BUFF_SET:
     }
 #endif
 
+    printf("Filter initialized.\n");
+
     int hardwareRet = runHardware();
 
     if(hardwareRet == 0)
@@ -114,19 +139,17 @@ INPUT_BUFF_SET:
 
         //Somewhere here, we need to access the output arrays, because the result is done.
 
-        XPolarfir_Set_outputMag(&polarFIRinst, hw_outputMag);
-        XPolarfir_Set_outputPhase(&polarFIRinst, hw_outputPhase);
-
         //////////////////////////////////////////////////
-        printf("Recieved output from hardware:\n");
+        printf("Received output from hardware:\n");
         for(int i = 0; i < DATA_LENGTH; i++)
         {
-            printf("Mag = %llu, Phase = %llu\n", hw_outputMag[i], hw_outputPhase[i]);
+        	//printf("hwMag[%d] = %f, ph = %f\n", i, (float*)(HW_MAG_BUFFER + i), (float*)(HW_PHASE_BUFFER + i));
+        	printf("hwMag[%d] = %f, ph = %f\r", i, (*(float*)(HW_MAG_BUFFER  + i)), (*(float*)(HW_PHASE_BUFFER  + i)));
         }
     }
     else
     {
-        printf("Result failed to generate. No output to show.\n");
+        printf("Result failed to generate. No output to show. :( \n");
     }
 
     systemDeInit();

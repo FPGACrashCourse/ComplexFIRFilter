@@ -83,7 +83,14 @@ void polarFIRstart(void *instance)
  */
 int runHardware()
 {
+	int c = 0;
     Xil_DCacheFlush();
+    printf("Wait for accel ready");
+    while(!XPolarfir_IsReady(&polarFIRinst))
+    {
+    	printf(".");
+    }
+    printf("\n");
     if (XPolarfir_IsReady(&polarFIRinst))
     {
         print("Starting peripheral...\n");
@@ -94,7 +101,7 @@ int runHardware()
         return 1;
     }
     XPolarfir_Start(&polarFIRinst);
-    int c = 0;
+    c = 0;
     while (!XPolarfir_IsReady(&polarFIRinst))
     {
         printf("Waiting for completion... %i\r", ++c);
