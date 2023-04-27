@@ -14,25 +14,28 @@
 
 #include "CORDIC.h"
 
-void bulkCordicConvert(hls::stream<int> &cos, hls::stream<int> &sin, float * mag, float *theta, int convertSize)
+void bulkCordicConvert(hls::stream<FIR_INT_OUTPUT> &cos, hls::stream<FIR_INT_OUTPUT> &sin, float * mag, float *theta, int convertSize)
 {
 	FIXED_POINT cosFixed = 0.0;
-	int cosInt, sinInt;
+	FIR_INT_OUTPUT cosInt, sinInt = 0;
 	FIXED_POINT sinFixed = 0.0;
 	FIXED_POINT outMag = 0.0;
 	FIXED_POINT outTheta = 0.0;
 	// Initialize a bunch of CORDIC's to convert the incoming data:
 	BULK_CORDIC: for(int i = 0; i < convertSize; i++)
 	{
+		//Read from the stream and convert to fixed point:
 		cos.read(cosInt);
 		sin.read(sinInt);
 		cosFixed = (FIXED_POINT)cosInt;
 		sinFixed = (FIXED_POINT)sinInt;
+
+		//Send to CORDIC:
 		cordic(cosFixed, sinFixed, &outMag, &outTheta);
-		theta[i] = (float)outTheta;
-		mag[i] = (float)outMag;
+		theta[i] = outTheta.to_float();
+		mag[i] = outMag.to_float();
 #ifdef DEBUG_MODE
-		printf("CORDIC.cpp: Magnitude: %f, Phase: %f\n", (float)outMag, (float)outTheta);
+		printf("CORDIC.cpp: Magnitude: %f, Phase: %f\n", outMag.to_float(), outTheta.to_float());
 #endif
 	}
 }
@@ -55,6 +58,10 @@ void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *t
         FIXED_POINT CORDIC_SCALE_FACTOR = 0.60735;
 
         FIXED_POINT swapTemp = 0.0; // Temporary value used for swapping coordinates to perform initial vector rotation
+
+#ifdef DEBUG_MODE
+      printf("Received input %d + j%d\n", cos.to_int(), sin.to_int());
+#endif
 
         // Rotate the vector to within quadrant I or IV, based upon the sin (y) value of the system
 
@@ -105,6 +112,7 @@ void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *t
 ROTATOR:
         for (int i = 0; i < NUM_ITERATIONS; i++)
         {
+#pragma HLS PIPELINE
                 // Compute a shift iteration for the system:
                 FIXED_POINT cosShift = currentCos >> i;
                 FIXED_POINT sinShift = currentSin >> i;

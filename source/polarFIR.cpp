@@ -10,16 +10,14 @@
 
 /**
  * @brief Computes a 1-d FIR complex FIR filter and displays the result in polar coordinates.
- *
- * @param inputReal
- * @param inputImg
- * @param kernelReal
- * @param kernelImg
- * @param outputMag
- * @param outputReal
- * @param inputLength
+ * 
+ * @param inputReal Real inputs, first 25 elements are the filter
+ * @param inputImg Imaginary inputs, first 25 elements are the filter
+ * @param outputMag Output magnitude
+ * @param outputPhase Output phase
+ * @param inputLength Length of the input dataset to compute
  */
-void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, float *outputMag, float *outputPhase, int inputLength)
+void polarFir(int *inputReal, int *inputImg, float *outputMag, float *outputPhase, int inputLength)
 {
 
 // Define the system's AXI interface:
@@ -27,42 +25,33 @@ void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, fl
 #pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle=realIn
 #pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle=imgIn
 
-// Filter inputs:
-#pragma HLS INTERFACE mode = m_axi port = filterReal offset = slave bundle = filter
-#pragma HLS INTERFACE mode = m_axi port = filterImg offset = slave bundle = filter
-#pragma HLS ARRAY_PARTITION variable=filterReal type=complete
-#pragma HLS ARRAY_PARTITION variable=filterImg type=complete
-
 // Polar outputs:
-#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle = realOut
-#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle = imgOut
+#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave
+#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave
 
 #pragma HLS INTERFACE mode = s_axilite port = inputLength
+#pragma HLS INTERFACE mode = s_axilite port = return
 
-    int kernelReal[FILTER_SIZE]; //!< Real filter coefficient storage location
-    int kernelImg[FILTER_SIZE]; //!< Imaginary filter coefficient storage location
 
-#pragma HLS ARRAY_PARTITION variable=kernelReal type=complete
-#pragma HLS ARRAY_PARTITION variable=kernelImg type=complete
-
-    // Initialize kernel with filter coefficients:
-    FILTER_INIT:for (int i = 0; i < FILTER_SIZE; i++)
+#ifdef POLAR_FIR_DEBUG_MODE
+    printf("INPUTS:\n");
+    for(int j = 0; j < inputLength; j++)
     {
-#pragma HLS UNROLL
-        kernelReal[i] = filterReal[i];
-        kernelImg[i] = filterImg[i];
+    	printf("POLARFIR: inputReal[%d] = %d, inputImg[%d] = %d\n", j, inputReal[FILTER_SIZE + j], j, inputImg[FILTER_SIZE + j]);
     }
+#endif
+
 
     //Declare stream objects:
-    hls::stream<int> realStream;
-    hls::stream<int> imgStream;
+    hls::stream<FIR_INT_OUTPUT> realStream; //!< Stream between FIR output and CORDIC input (real)
+    hls::stream<FIR_INT_OUTPUT> imgStream; //!< Stream between FIR output and CORDIC input (imaginary)
 
 #pragma HLS STREAM variable=realStream
 #pragma HLS STREAM variable=imgStream
 
 #pragma HLS DATAFLOW
     //Declare the CORDIC and FIR, and connect them with the stream objects:
-    complexFIR(inputReal, inputImg, kernelReal, kernelImg, realStream, imgStream);
-    bulkCordicConvert(realStream, imgStream, outputMag, outputPhase, FILTER_SIZE);
+    complexFIR(inputReal, inputImg, realStream, imgStream, inputLength);
+    bulkCordicConvert(realStream, imgStream, outputMag, outputPhase, inputLength);
 
 }

@@ -6,8 +6,10 @@
 
 #include "CORDIC.h"
 #include "complexFIR.h"
+#include "datatypes.h"
 
-void polarFir(int *inputReal, int *inputImg, int *filterReal, int *filterImg, float *outputMag, float *outputPhase, int inputLength);
+//#define POLAR_FIR_DEBUG_MODE
 
+void polarFir(int *inputReal, int *inputImg, float *outputMag, float *outputPhase, int inputLength);
 
-#endif // POLARpFIR_H
+#endif // POLAR_FIR_H
