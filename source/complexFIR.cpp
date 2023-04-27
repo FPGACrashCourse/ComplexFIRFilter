@@ -77,7 +77,7 @@ void complexFIR(int *inputReal, int *inputImg, hls::stream<FIR_INT_OUTPUT> &outp
 COMPUTE:
     for (int k = 0; k < filterLength; k++)
     {
-//#pragma HLS UNROLL factor = 2
+#pragma HLS UNROLL factor = 2
     	FIR_INT_INPUT inTempReal = FIR_INT_INPUT(inputReal[FILTER_SIZE + k]);
     	FIR_INT_INPUT inTempImg = FIR_INT_INPUT(inputImg[FILTER_SIZE + k]);
 
