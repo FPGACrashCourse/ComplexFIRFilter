@@ -1,0 +1,359 @@
+\documentclass[11pt]{report}
+\usepackage[a4paper, total={6in, 8.5in}]{geometry}
+\usepackage{authblk}
+\usepackage{graphicx}
+\usepackage[section]{placeins}
+\usepackage[toc,page]{appendix}
+\usepackage{setspace}
+\usepackage{acro}
+\usepackage{textcomp}
+\usepackage{multicol}
+\usepackage{blindtext}
+\usepackage{caption}
+\usepackage[table,xcdraw]{xcolor}
+
+\usepackage{amsmath}
+
+% Graphs and plots
+\usepackage{pgf,pgfplots,pgfplotstable}
+\usepackage{SIunits}
+
+\renewcommand{\chaptername}{Part}
+
+\pgfplotsset{compat=newest} % Allows placing the legend below the plot
+
+
+% ----------  	VERILOG CODE LANGUAGE CONFIGURATION     ----------------------------------
+% Adapted from https://tex.stackexchange.com/questions/377122/typesetting-for-a-verilog-lstinput
+\usepackage{xcolor}
+\usepackage{listings}
+\definecolor{vgreen}{RGB}{104,180,104}
+\definecolor{vblue}{RGB}{20, 50, 250}
+\definecolor{vorange}{RGB}{255,143,102}
+
+\lstdefinestyle{verilog-style}
+{
+    language=Verilog,
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{vblue},
+    identifierstyle=\color{black},
+    commentstyle=\color{vgreen},
+    numbers=left,
+    numberstyle=\tiny\color{black},
+    numbersep=10pt,
+    tabsize=8,
+    moredelim=*[s][\colorIndex]{[}{]},
+    literate=*{:}{:}1
+}
+
+\lstdefinestyle{c-style}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  basicstyle=\small\ttfamily
+  frame=L,
+  numbers=left,
+  numberstyle=\tiny\color{black},
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{vblue},
+  identifierstyle=\color{black},
+  commentstyle=\color{vgreen},
+  stringstyle=\color{orange},
+}
+
+\makeatletter
+\newcommand*\@lbracket{[}
+\newcommand*\@rbracket{]}
+\newcommand*\@colon{:}
+\newcommand*\colorIndex{%
+    \edef\@temp{\the\lst@token}%
+    \ifx\@temp\@lbracket \color{black}%
+    \else\ifx\@temp\@rbracket \color{black}%
+    \else\ifx\@temp\@colon \color{black}%
+    \else \color{vorange}%
+    \fi\fi\fi
+}
+\makeatother
+
+\usepackage{trace}
+% --------------------------END CODE DISPLAY CONFIG ----------------------------------------
+
+%Hyperlinks:
+\usepackage{hyperref}
+\hypersetup{
+    %bookmarks=true,         % show bookmarks bar?
+    unicode=false,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={FIR Filters in Vitis HLS},    % title
+    pdfauthor={Alexander Stepko, axstepko.com},     % author
+    pdfsubject={Implementation report},   % subject of the document
+    pdfcreator={axstepko},   % creator of the document
+    pdfproducer={Texifier}, % producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfnewwindow=true,      % links in the new PDF window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=blue,          % color of internal links (change box color with linkbordercolor)
+    citecolor=blue,        % color of links to bibliography
+    filecolor=cyan,         % color of file links
+    urlcolor=cyan        % color of external links
+}
+
+% -------------------------- ACRONYMS -----------------------------------------------
+
+\DeclareAcronym{CORDIC}{
+	short=CORDIC,
+	long=coordinate rotation digital computer
+}
+
+\DeclareAcronym{FPGA}{
+	short=FPGA,
+	long=field programmable gate array
+}
+
+\DeclareAcronym{FIR}{
+	short=FIR,
+	long=finite impulse response
+}
+\DeclareAcronym{HLS}{
+	short=HLS,
+	long=high-level synthesis
+}
+
+\DeclareAcronym{RTL}{
+	short=RTL,
+	long=register transfer level
+}
+
+\DeclareAcronym{WNS}{
+	short=WNS,
+	long=worst negative slack
+}
+
+% -------------------------- END ACRONYMS --------------------------------------------
+
+%------------------------------------------------------------
+%             TITLE SECTION
+%------------------------------------------------------------           
+\title{\normalsize{EE/CMPEN 417}\Large\\\textbf{Design and Implementation of a Discrete Polar FIR and CORDIC Computational System}}
+\author{Alexander Stepko | \emph{axstepko@psu.edu}}
+
+\affil{The Pennsylvania State University\\School of Electrical Engineering and Computer Science\\\normalsize{Instructor Zheyu Li, PhD. Candidate}}
+\date{\today}
+
+\renewcommand*\contentsname{Report Contents}
+
+\fboxsep = 0mm %padding thickness
+\fboxrule = 1.25pt %border thickness
+
+\begin{document}
+%\doublespacing
+\begin{titlepage}
+    \maketitle
+\end{titlepage}
+\begin{singlespace}
+    \tableofcontents
+\end{singlespace}
+\newpage
+\section*{Acronyms}
+\begin{multicols}{2}
+    \raggedright
+    \printacronyms[heading=none]
+\end{multicols}
+\listoffigures
+\listoftables
+\newpage
+
+%------------------------------------------------------------
+%                 INTRODUCTION  
+%------------------------------------------------------------
+\section{Introduction}
+This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. The target hardware for this report is a Xilinx Zynq-7000 series chipset, packaged on a Digilent Zedboard trainer kit.
+
+\subsection{Processor Chain Theories}
+\subsubsection{FIR filter}\label{FIRtheory}
+
+The FIR filter is a fundamental technique used in countless systems in the medical, defense, academic, and consumer sectors. Moreover, a high-performance FIR filter is almost always necessary in a signal processing chain. Generically, the formula for a complex FIR filter is
+\begin{equation}
+    Y = \sum_{i=0}^{n}w_i * X[n - i]
+\end{equation}
+for any arbitrary set of inputs. This is equivalent to a 1-D convolution. This can be extended to complex vectors, which results in an almost identical equation of the form
+\begin{equation}
+	\overline{Y} = \sum_{i=0}^{n} w_i * \overline{X}[n-i]
+\end{equation}
+where $\overline{Y}$, $w_i$, and $\overline{X}[n-i]$ are of the general complex form $\overline{Z} = \alpha + j \beta$ (in cartesian coordinates). While this result is desierable in most scenarios, a more useful form of the result exists in polar form, where generically the same vector can be represented as $\overline{Z} = (r, \theta)$ in polar coordinates. In standard trigonometry, this conversion is trivial. For the rectangular vector $\overline{Z} = \alpha + j \beta$, we find its polar form with the following equations
+\begin{equation}
+	r = \sqrt{\alpha^2 + \beta^2}
+\end{equation}
+\begin{equation}
+	\theta = \tan^{-1}\left({\frac{\beta}{\alpha}}\right)
+\end{equation}
+which results in the vector $\overline{Z} = (r, \theta)$. While the average individual can quickly compute these values with a calculator, the computational power required to reach these results is rather large. In a setting where realtime performance is necessary, these calculations are nearly impossible to achieve or require an unreasonably large amount of compute power.
+
+\subsubsection{CORDIC}
+
+A well-known method to perform trigonometry and coordinate system conversion is the \ac{CORDIC}. This system iteratively rotates a vector using simple matrix multiplication to the desired target, and then applies a simple gain factor. Because it is multiplication on a base-two numerical system, it is possible to achieve this with a simple right-shift and addition/subtraction of the vector to rotate. The generic form for a CORDIC rotation is
+
+\begin{equation}
+\begin{bmatrix}
+\cos \theta & -\sin \theta \\
+\sin \theta & \cos \theta \\
+\end{bmatrix}\begin{bmatrix}
+x_{i-1} \\
+y_{i-1} \\
+\end{bmatrix}
+= \begin{bmatrix}
+x_i \\
+y_i \\
+\end{bmatrix} 
+\end{equation}
+which is resultant in
+\begin{equation}
+x_i = x_{i-1}  \cos \theta - y_{i-1}  \sin \theta\
+\end{equation} and 
+\begin{equation}
+y_i = x_{i-1} \sin \theta + y_{i-1} \cos \theta\
+\end{equation}
+being the rotated versions of the original vector $[x_{i-1}, y_{i-1}]$. This algorithm is iterative, and therefore it rotates by decrementing amounts towards the target angle. While the rotation correctly computes to the raw angle, it fails to correctly compute the converted magnitude. This is easily fixed by a single multiplication of the CORDIC gain factor. Gain factors are computed iteratively with the equation
+\begin{equation}
+K(n) = \prod_{i=0}^{n-1} K_i  = \prod_{i=0}^{n-1}\frac {1}{\sqrt{1 + 2^{-2i}}}
+\end{equation} and  
+\begin{equation}
+K = \lim_{n \to \infty}K(n) \approx 0.6072529350088812561694
+\end{equation}
+which are normally computed and stored in a lookup table for quick-reference without computing the result in realtime. 
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+i & $2^{-i}$ 	& Rotating Angle  	& Scaling Factor 	& CORDIC Gain 	\\ \hline \hline
+0 & 1.0 		& $45.000^{\circ}$	& 1.41421			& 1.41421		\\ \hline
+1 & 0.5 		& $26.565^{\circ}$	& 1.11803			& 1.58114		\\ \hline
+2 & 0.25 		& $14.036^{\circ}$	& 1.03078			& 1.62980		\\ \hline
+3 & 0.125 		& $7.125^{\circ}$	& 1.00778			& 1.64248		\\ \hline
+4 & 0.0625 	& $3.576^{\circ}$	& 1.00195			& 1.64569		\\ \hline
+5 & 0.03125 	& $1.790^{\circ}$	& 1.00049			& 1.64649		\\ \hline
+6 & 0.015625 	& $0.895^{\circ}$	& 1.00012			& 1.64669		\\ \hline
+\end{tabular}
+\end{center}
+\caption{CORDIC gains for the first six iterations of the algorithm}
+\label{table:cordic}
+\end{table}
+\FloatBarrier
+
+As noticed above, the CORDIC gain $K_i$ increases with each iteration. If we compute $K_i ^{-1}$, we then see that the gain decreases as iterations increase. This fact is only important in the sense that after a certain point of iterations, the gains are practically identical until the $10^{-9}$ decimal point. Essentially, beyond a certain number of iterations the precision of the algorithm plateaus at almost the exact correct value.
+
+This particular filter is crucial in countless industries, such as medical, defense, academic, and consumer sectors. Moreover, the usage of a \ac{FIR} filter is included in nearly every advanced signal processing chain. This lab explores the development of such a filter using Vitis HLS, an advanced \ac{HLS} synthesis tool that allows linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. The target hardware for this report is a Xilinx Zynq-7000 series chipset, packaged on a Digilent Zedboard trainer kit.
+
+\chapter{A Rudimentary \ac{FIR} Filter}
+The equations shown in section \ref{FIRtheory} for the FIR filter are now implemented in Vitis HLS as a 1-D convolution. The computation of a convolution is rather simple, taking into account the fact that we have complex numbers to multiply (the filter weights, and the raw data to be processed). Generically, for complex vectors
+\begin{equation}
+	a = \alpha + j\beta
+\end{equation}
+and 
+\begin{equation}
+	b = \rho + j\delta
+\end{equation}
+we find their product $c = ab$ equivalent to
+\begin{equation}
+	c = (\alpha\rho - \beta\delta) + j(\alpha\delta+\beta\rho)
+\end{equation}
+
+This can be quickly translated into a processing algorithm shown below in Listing \ref{lst:FIRconv}.
+
+\begin{singlespace}
+    \lstinputlisting[breaklines=true, label={lst:FIRconv}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=125, linerange={125-131}]{../source/complexFIR.cpp}
+\end{singlespace}
+
+This algorithm is then instantiated across the whole dataset with the following function behavior:
+
+\begin{singlespace}
+    \lstinputlisting[breaklines=true, label={lst:FIRconv}, caption={FIR filter source code}, style=c-style, language=C++, firstnumber=70, linerange={70-85}]{../source/complexFIR.cpp}
+\end{singlespace}
+
+\subsection{Performance of the algorithm}
+The performance of the algorithm can be broadly categorized into two major components:
+
+\begin{quote}
+\begin{description}
+	\item [Latency] The computational time (clock cycles) required to process a valid result for a given input dataset.
+	\item [Utilization] The amount of resources required to compute the result at a certain latency.
+\end{description}
+\end{quote}
+
+Both of these metrics provide a general assessment of a given algorithm's performance. A high-efficiency algorithm minimizes utilization, and a high-performance algorithm minimizes latency. The combination of these two results in an ideally performing algorithm.
+
+\subsubsection{Latency}
+As emphasized in the introduction, the performance of the algorithm is a critical factor in its overall usability as a signal processor. One such metric of performance for the FIR filter is the computational latency necessary to compute a filter pass. We can estimate the optimized algorithm's latency prior to optimization with some optimizations:
+\begin{enumerate}
+	\item Element access (read/write) takes 1 cycle
+	\item Addition takes 2 cycles
+	\item Multiplication takes 4 cycles
+\end{enumerate}
+If we consider the filter pass shown in Listing \ref{lst:FIRconv}, it is possible to compute the number of cycles $Q$. $Q$ can be defined as 
+\begin{equation}
+	Q = X_i + A_i + M_i
+\end{equation}
+where $X_i$, $A_i$, $M_i$ are defined as 
+\begin{equation}
+	X_i = \sum_{i=0}^{numTaps} 1 = numTaps
+\end{equation}
+\begin{equation}
+	A_i = \sum_{i=0}^{numTaps} 2 = 2 * numTaps
+\end{equation}
+\begin{equation}
+	M_i = \sum_{i=0}^{numTaps} 4 = 4 * numTaps
+\end{equation}
+and subsequently 
+\begin{equation}
+	Q = (1 + 2 + 4)numTaps = 7 * numTaps
+\end{equation}
+ 
+ Assuming a filter size of $numTaps = 25$, we determine the latency to be approximately $Q$ = 175 cycles. This is, of course, just a single pass of the filter on a single datapoint, so multiple datapoints takes many more cycles. This has significant impact on the performance of the processing chain, and drastically increases system latency for a valid result. 
+ 
+ To improve the performance of this algorithm, 
+
+
+
+
+
+
+
+
+
+
+\section{Hardware model}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
