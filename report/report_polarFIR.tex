@@ -14,6 +14,15 @@
 
 \usepackage{titlepic}[cc]
 
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\chaptermark}[1]{\markboth{\small\uppercase{#1}}{}}
+\renewcommand{\sectionmark}[1]{}
+%\renewcommand{\headrulewidth}{0pt} % customise the layout...
+%\lhead{}\chead{}\rhead{}
+%\lfoot{}\cfoot{\thepage}\rfoot{}
+\setlength{\headheight}{14pt}
+
 \usepackage{bytefield}
 
 \usepackage{listings}
@@ -207,7 +216,7 @@
 %------------------------------------------------------------
 %                 INTRODUCTION  
 %------------------------------------------------------------
-\chapter*{Introduction}
+\chapter{Introduction}
 This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. The target hardware for this report is a Xilinx Zynq-7000 series chipset, packaged on a Digilent Zedboard trainer kit.
 
 \section{Processing chains}
@@ -505,23 +514,72 @@ That being said, there are a few technical constraints or considerations to be m
 
 Another consideration is the input/output range of the design, in addition to signage or required precision. It is possible to compute the number of bits required for any given number using the equation
 
-\begin{equation}
-	K = \lceil log_2{x} \rceil
+\begin{equation}\label{widthEQ}
+	K = \lceil log_2{|x|} \rceil
 \end{equation}
 
 where $K$ is the computed number of bits, and $x$ is the number in question. If $x$ is a decimal number, it's necessary to shift the number's decimal to the end of the decimal for the calculation. For example the number $x = 9000$ requires 14 bits, and the number $x = 10.0025$ requires 17 bits.
 
-We can apply the same concepts to the FIR filter
+We can also use this equation to determine the number of bits necessary to handle data in/out of the FIR filter. Consider a worst-case scenario for the input dataset $\overline X$ and filter coefficients $w_i$ of
+\begin{equation*}
+	\overline X = [50 + j50, 50 + j50,...,50+j50]^T
+\end{equation*}
+and
+\begin{equation*}
+	w_i = [50 + j50, 50 + j50,...,50+j50]^T
+\end{equation*}
+where the input data size is arbitrary, but the span of $w_i$ is fixed to 25 taps. Applying the FIR filter to a datapoint, we find the output of the filter $\overline Y$ to be
+\begin{equation*}
+	\overline Y_{max} = 2 * 50^2 * 25 = 125,000 
+\end{equation*}
+
+as a worst-case maximum. Of course, this also works for a worst-case minimum, which generates  $\overline Y_{min} = -125,000$. These results are applied to equation \ref{widthEQ}, determining the results of $K_{in}$ for the inputs, and $K_{out}$ for the output bitwidth required:
+\begin{equation}
+	K_{in} = \lceil log_{2}{|50|} \rceil = 6
+\end{equation}
+\begin{equation}
+	K_{out} = \lceil log_{2}{|125000|} \rceil = 17
+\end{equation}
+
+These results are applied to arbitrary precision datatypes in the design, and contribute significantly to the reduction of resource utilization in the design.
 
 \subsubsection{Arbitrary precision}
 
-The HLS environment offers the \codeword{ap_int.h} and \codeword{ap_fixed} libraries, which permit the creation of arbitrary-width integer and fixed-point datatypes.
+The HLS environment offers arbitrary precision datatypes for signed or unsigned integers, and fixed-point decimals. When leveraged properly, the usage of these data types dramatically increases design performance. 
 
+To use this functionality, we access functions in the \codeword{ap_int.h} and \codeword{ap_fixed} libraries. The results obtained for $K_{in}$ and $K_{out}$ translate into the following design datatypes seen in Listing \ref{datatypeCode}
 
+\begin{singlespace}
+    \lstinputlisting[breaklines=true,
+     label={datatypeCode},
+      caption={System datatypes},
+       style=c-style,
+        language=C++,
+         firstnumber=20,
+          linerange={20-23}]{../source/datatypes.h}
+\end{singlespace}
+
+Utilization of these new datatypes as \codeword{typedef}s is not incredibly complex, but does require consultation of HLS documentation for utilization functions. Conversion between datatypes, or printing results to the console requires specific syntax.
 
 \subsection{Optimization results}
 
-Optimization performed to the algorithm has dramatically reduced the design's latency, and utilization
+Optimization performed to the algorithm has dramatically reduced the design's latency and utilization. This result was only possible after the careful insertion of precompiler directives, and one's ability to structure the algorithm in a manner conducive to parallel processing. It should be noted that there are still design limitations that exist. Namely, the ability to load data input into the filter itself. Because the top-level architecture requires variable input lengths, there's nothing that can be done to improve element access, as those elements are passed as a pointer of unknown size (i.e. \codeword{int *foo} instead of \codeword{int foo[4]}).
+
+Below in Figure \ref{optimizedFIRutil} is the utilization report generated from HLS upon synthesis of the computational system. 
+
+ \begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=0.8\textwidth]{media/xxxx.png}}
+ 		\caption{Optimized utilization report}
+ 		\label{optimizedFIRutil}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
+ 
+ Notably, we find a substantial reduction in 
+ 
+ 
 \end{document}
 
 
