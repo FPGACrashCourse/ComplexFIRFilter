@@ -2,3 +2,4 @@ finalProject
 *.log
 finalProjectHW
 .metadata
+*.DS_store
