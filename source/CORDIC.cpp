@@ -76,7 +76,6 @@ void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *t
                 swapTemp = -1 * currentCos; // Set temp to opposite of X coordinate
                 currentCos = currentSin;    // Set Y to X
                 currentSin = swapTemp;      // Set X to negated Y
-
                 thetaRotated = ninetyDeg;       
 
 #ifdef DEBUG_MODE
@@ -128,7 +127,6 @@ ROTATOR:
                         // Perform a clockwise rotation down to the X-axis
                         currentCos = currentCos + sinShift;
                         currentSin = currentSin - cosShift;
-
                         // Update the rotated theta
                         thetaRotated = thetaRotated + cordicPhase[i];
                 }
@@ -140,7 +138,6 @@ ROTATOR:
                         // Counter-clockwise rotation up to the X-axis
                         currentCos = currentCos - sinShift;
                         currentSin = currentSin + cosShift;
-
                         // Update the rotated theta
                         thetaRotated = thetaRotated - cordicPhase[i];
                 }

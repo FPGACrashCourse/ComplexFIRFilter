@@ -22,9 +22,4 @@ typedef ap_fixed<FIXED_BITS_M, FIXED_BITS_N> FIXED_POINT; //!< AP-Fixed datype f
 typedef ap_int<FIR_INT_INPUT_WIDTH> FIR_INT_INPUT; //!< Fixed-width integer datatype for FIR inputs
 typedef ap_int<FIR_INT_OUTPUT_WIDTH> FIR_INT_OUTPUT; //!< Fixed-width integer datatype for FIR outputs
 
-
-
-
-
-
 #endif

@@ -250,7 +250,10 @@
 %                 INTRODUCTION  
 %------------------------------------------------------------
 \chapter{Introduction}
+
 \fancypagestyle{plain}
+
+
 This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. The processing chain consists of the following components:
 \begin{figure}[h!]
 	\centering
@@ -403,7 +406,7 @@ As noticed above, the CORDIC gain $K_i$ increases with each iteration. If we com
         
         \begin{singlespace}
             \lstinputlisting[breaklines=true,
-            label={CORDICheader},
+            label={CORDICsource},
             caption={CORDIC source code},
             style=c-style,
             language=C++,
