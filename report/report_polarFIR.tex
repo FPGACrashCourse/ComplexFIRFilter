@@ -184,6 +184,11 @@
 	long=field programmable gate array
 }
 
+\DeclareAcronym{FIFO}{
+	short=FIFO,
+	long=first in, first out
+}
+
 \DeclareAcronym{FIR}{
 	short=FIR,
 	long=finite impulse response
@@ -350,10 +355,38 @@ As noticed above, the CORDIC gain $K_i$ increases with each iteration. If we com
 
 \subfile{CORDIC/CORDIC.tex}
 
-\chapter{Complete processor chain}
+\chapter{Complete Processing Chain}
 
+The complete processing chain consists of the FIR filter and CORDIC cartesian-to-polar converter shown in Figure \ref{processingChainGraph}. Systems which may employ such a chain commonly include real-time audio processing, wireless communication, medical imaging, and radar systems - to name a few.  
 
+The internal architecture of the complete processing chain is rather simple, it serves as a top-level I/O handler for the chain, and handles data between processing elements. Data is transferred between the FIR filter and CORDIC via \codeword{HLS::stream} objects. These objects act as a \ac{FIFO} queue between functions to ensure efficient single-element data transfer without substantial read/write delays. The syntax to declare datastreams between the two chain elements is shown in Listing \ref{streamSyntax}
 
+        \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={streamSyntax},
+            caption={Stream syntactical use},
+            style=c-style,
+            language=C++,
+            firstnumber=46,
+            linerange={46-57},]{../source/polarFIR.cpp}
+        \end{singlespace}
+
+Additonally, the complete processing chain uses the appropriate precompiler directives to set the AXI4-compliant interface for the device. Particularly, the usage of a memory-access interface is desired (set/get various data with driver functions). This enables export as a Xilinx IP, and its subsequent use in a Vivado product. An example of the interface is shown in Listing \ref{interfaceSyntax}
+
+        \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={interfaceSyntax},
+            caption={AXI4 interface declaration},
+            style=c-style,
+            language=C++,
+            firstnumber=70,
+            linerange={70-72},]{../source/polarFIR.cpp}
+        \end{singlespace}
+        
+        
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{appendices}
     \chapter{Top-level processing chain source code}
