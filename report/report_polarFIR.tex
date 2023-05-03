@@ -40,7 +40,6 @@
 % Graphs and plots
 \usepackage{pgf,pgfplots,pgfplotstable}
 \usepackage{SIunits}
-
 %\renewcommand{\chaptername}{Part}
 
 \pgfplotsset{compat=newest} % Allows placing the legend below the plot
@@ -186,7 +185,7 @@
 
 \DeclareAcronym{FIFO}{
 	short=FIFO,
-	long=first in, first out
+	long=first in first out
 }
 
 \DeclareAcronym{FIR}{
@@ -218,8 +217,8 @@
 %------------------------------------------------------------
 %             TITLE SECTION
 %------------------------------------------------------------           
-\title{\normalsize{EE/CMPEN 417}\Large\\\textbf{Design and Implementation of a Discrete Polar FIR and CORDIC Computational System}}
-\author{Alexander Stepko | \emph{axstepko@psu.edu}}
+\title{\Large\textbf{Design and Implementation of a Discrete FIR and CORDIC Conversion System}}
+\author{Alex Stepko | \emph{axstepko.com}}
 
 \affil{The Pennsylvania State University\\School of Electrical Engineering and Computer Science\\\normalsize{Zheyu Li, PhD. Candidate}}
 \date{\today}
@@ -249,15 +248,15 @@
 \end{multicols}
 \listoffigures
 \listoftables
+\lstlistoflistings
 \newpage
 
 %------------------------------------------------------------
 %                 INTRODUCTION  
 %------------------------------------------------------------
 \chapter{Introduction}
-
 \fancypagestyle{plain}
-
+%% Leave some space here for the header to not place a 'T' for some reason..
 
 This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. The processing chain consists of the following components:
 \begin{figure}[h!]
@@ -268,9 +267,13 @@ This report discusses the design, optimization, and physical implementation of a
 	\label{processingChainGraph}
 \end{figure}
 
-The processing chain computes a 1-D complex FIR filter on a dataset loaded to the accelerator in cartesian ($(x, y)$) format. The output of the FIR filter is also of the cartesian form. This cartesian dataset is streamed via a FIFO data channel into a CORDIC accelerator, which performs a conversion of the input vector $(x, y)$ to the polar form ($(r, \theta)$). This data is then directed back towards the Zynq processor.
+The processing chain computes a 1-D complex FIR filter on a dataset loaded to the accelerator in cartesian ($(x, y)$) format. The output of the FIR filter is also of the cartesian form. This cartesian dataset is streamed via a FIFO data channel into a CORDIC accelerator, which performs a conversion of the input vector ($(x, y)$) to the polar form ($(r, \theta)$). This data is then directed back towards the Zynq processor, which displays the product on the console.
 
 This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. This chain was then packaged as an \ac{IP}, and used in a block design in Vivado. Hardware was synthesized and implemented in Vivado, and the exported hardware was then used in the Vitis IDE to finish integration of the accelerator into a complete system. The target hardware for this processing chain is a Xilinx Zynq-7000 series chipset, which is held on a Digilent/Avnet/National Instruments Zedboard development board.
+
+\vspace{1em}
+
+\colorbox{red!15}{\parbox{\linewidth}{\noindent\textbf{Note to Developers:} All source code for this project can be found on the \href{https://github.com/FPGACrashCourse/ComplexFIRFilter}{GitHub repository} (\href{https://github.com/FPGACrashCourse/ComplexFIRFilter}{https://github.com/FPGACrashCourse/ComplexFIRFilter}).}}
 
 \section{Processing chain}
 \subsection{FIR filter}\label{FIRtheory}
@@ -367,8 +370,8 @@ The internal architecture of the complete processing chain is rather simple, it 
             caption={Stream syntactical use},
             style=c-style,
             language=C++,
-            firstnumber=46,
-            linerange={46-57},]{../source/polarFIR.cpp}
+            firstnumber=81,
+            linerange={81-90},]{../source/polarFIR.cpp}
         \end{singlespace}
 
 Additonally, the complete processing chain uses the appropriate precompiler directives to set the AXI4-compliant interface for the device. Particularly, the usage of a memory-access interface is desired (set/get various data with driver functions). This enables export as a Xilinx IP, and its subsequent use in a Vivado product. An example of the interface is shown in Listing \ref{interfaceSyntax}
@@ -379,13 +382,109 @@ Additonally, the complete processing chain uses the appropriate precompiler dire
             caption={AXI4 interface declaration},
             style=c-style,
             language=C++,
-            firstnumber=70,
-            linerange={70-72},]{../source/polarFIR.cpp}
+            firstnumber=60,
+            linerange={60-68},]{../source/polarFIR.cpp}
         \end{singlespace}
         
+The resultant top-level function completes the processing chain developed in the HLS environment. No optimization is performed in this top-level function (aside from the \codeword{HLS::stream}s), as it is unnecessary given the granular development of the component processsing stages.
+
+\section{Hardware development}\label{hwPackage}
+
+This HLS product was exported as a fully AXI4-compliant interface IP for usage in a Vivado design. This IP allows transport between different hardware targets, and also protects any sensitive processing trade-secrets from being made public. 
+
+This HLS IP was brought into a Vivado block diagram. Additionally, the Zynq processing system and the necessary AXI4 protocol systems was connected using the connection automation function in Vivado. The complete block diagram for the system is seen below in Figure \ref{fig:BD}.
+
+\begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=\textwidth]{media/blockDesign.pdf}}
+ 		\caption{Hardware block diagram}
+ 		\label{fig:BD}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
+ 
+ The block diagram provides further abstraction from the source code written in C++ (and the Verilog products), and lets the deployment process happen much more quickly. The block diagram was then wrapped, and a RTL diagram was generated. The design was then synthesized implemented, and packaged as a \texttt{.xsa} file for usage in Vitis IDE as a development platform. 
+ 
+ \begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=\textwidth]{media/schematic.pdf}}
+ 		\caption{RTL schematic}
+ 		\label{fig:RTL}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
+ 
+
+\section{Vitis IDE interaction development}
+
+The hardware design created in section \ref{hwPackage} was brought into Vitis IDE as the last step in the development stack to generate a functional product. In the IDE, we develop an interaction function to initiate, start, and obtain results from any given processing chain.
+
+In addition to the hardware design, Vitis HLS provides a set of driver functions for utilization of a HLS product in a complete system. These functions are necessary to interact with the HLS IP. The generated drivers include typical hardware interaction functions, such as set/get of data, initialization, start/stop, and status returns. The function declarations are included in Listing \ref{xpolarfirDeclarations}, although the specifics don't essentially matter.
+
+What is crucially important is that the order-of-operations is followed to initialize the hardware to its proper state before running the accelerator. This is accomplished with a set of functions provided in the driver, but is abstracted slightly for ease-of-development. The source code for this abstraction layer is provided in Listing \ref{IPcontrolSource}.
+
+With a functional driver, it is possible to interact with the accelerator and validate its functionality. This is accomplished via a top-level application, who's source code can be found in Listing \ref{mainIDEsource}.
+
+The high-level functionality of the source code is to generate an input and filter set, run the accelerator, and print out the results. Data fed into the filter is a \codeword{u32} datatype, and is memory-mapped to pointers shown below in Listing \ref{mainDatamap}
+
+	   \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={mainDatamap},
+            caption={Primary datatypes},
+            style=c-style,
+            language=C++,
+            firstnumber=120,
+            linerange={120-128},]{../IDE/polarFIR_r10/src/main.c}
+        \end{singlespace} 
         
+Then, with the datatypes properly generated and allocated, the accelerator is set with that data. Additionally, the output products of the system are mapped, as shown in Listing \ref{mainIOmap}.
+
+	   \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={mainIOmap},
+            caption={Main application source code},
+            style=c-style,
+            language=C++,
+            firstnumber=137,
+            linerange={137-141},]{../IDE/polarFIR_r10/src/main.c}
+        \end{singlespace} 
         
+Once this process is complete, we run the accelerator using the \codeword{runHardware();} function provided by the IP-control abstraction layer.
         
+ 
+\section{Validation}
+       
+Validation of the hardware's functionality in the IDE is rather simple. Because the components were tested in HLS, the final validation is to check if the IDE product can properly interact with the accelerator. This is accomplishe via running the hardware (as previously mentioned), and then waiting for the hardware to return it has finished computation. 
+
+With the final results, we print the output results. Using a test dataset of the input vectors, filter coefficents, we initialize the dataset and run the test. We obtain the following output from the IDE after running the accelerator:
+
+
+\begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=0.2\textwidth]{media/IDEterminalInput.png}}
+ 		\caption{Input dataset}
+ 		\label{fig:inputResults}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
+ 
+\begin{figure}[h!]
+ 	\begin{center}
+ 		\fboxsep=0mm
+ 		\fbox{\includegraphics[width=0.5\textwidth]{media/IDEterminalOutput.png}}
+ 		\caption{Output data}
+ 		\label{fig:outputResults}
+ 	\end{center}
+ \end{figure}
+ \FloatBarrier
+ 
+ Manual calculation of these results verifies that the FIR filter correctly performs a filter pass, and the CORDIC computes the output value of the system. We consider the design to be complete, and have conducted a thorough study of its performance. 
+ 
+ Future work on this processing system look to allow interaction of the design using other data inputs aside from fixed numbers. Using audio or downconverted RF samples provides the basis for a rudementary processing system capable of detecting phase changes in a given signal. Additionally, the high-throughput of the design ensures that processing latency is kept to a minimum, and hardware resources are also minimized.
+     
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{appendices}
@@ -454,9 +553,20 @@ Additonally, the complete processing chain uses the appropriate precompiler dire
             style=c-style,
             language=C++,
             firstnumber=1,]{../source/datatypes.h}
-        \end{singlespace}    
+        \end{singlespace} 
         
-      \chapter{Hardware accelerator validation source code}
+        \chapter{Vitis IDE source code}   
+        
+         \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={mainIDEsource},
+            caption={Main application source code},
+            style=c-style,
+            language=C++,
+            firstnumber=1,]{../IDE/polarFIR_r10/src/main.c}
+        \end{singlespace} 
+        
+      \chapter{Hardware accelerator source code}
         \begin{singlespace}
             \lstinputlisting[breaklines=true,
             label={ValidationSource},
@@ -464,7 +574,39 @@ Additonally, the complete processing chain uses the appropriate precompiler dire
             style=c-style,
             language=C++,
             firstnumber=1,]{../source/hwValidation.cpp}
-        \end{singlespace}  
+        \end{singlespace} 
+   
+        \chapter{Hardware driver source code}
+                \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={xpolarfirDeclarations},
+            caption={HLS-generated driver declarations},
+            style=c-style,
+            language=C++,
+            firstnumber=1,]{hwSrc/xpolarfir.h}
+        \end{singlespace} 
+        
+        \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={IPcontrolHeader},
+            caption={Driver interaction function (header)},
+            style=c-style,
+            language=C++,
+            firstnumber=1,]{../IDE/polarFIR_r10/src/IPcontrol.h}
+        \end{singlespace} 
+        
+         \begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={IPcontrolSource},
+            caption={Driver interaction function},
+            style=c-style,
+            language=C++,
+            firstnumber=1,]{../IDE/polarFIR_r10/src/IPcontrol.c}
+        \end{singlespace} 
+        
+        
+        
+        
 
 \end{appendices}
 
