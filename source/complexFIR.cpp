@@ -13,7 +13,7 @@
 /**
  * Copyright (c) Alex Stepko (axstepko.com) 2023. All rights reserved.
  * 
- * THIS CODE WRITTEN WHOLY BY ALEX STEPKO (AXSTEPKO.COM) Redistribution and
+ * THIS CODE WRITTEN WHOLLY BY ALEX STEPKO (AXSTEPKO.COM) Redistribution and
  * use in source and binary forms, with or without modification, are
  * STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN PERMISSION from Alex Stepko (axstepko.com). 
  * 
