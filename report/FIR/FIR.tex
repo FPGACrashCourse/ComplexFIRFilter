@@ -23,8 +23,8 @@ This can be quickly translated into a processing algorithm shown below in Listin
       caption={Convolution algorithm},
        style=c-style,
         language=C++,
-         firstnumber=139,
-          linerange={139-145}]{../source/complexFIR.cpp}
+         firstnumber=165,
+          linerange={165-171}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
@@ -37,8 +37,8 @@ This algorithm is then instantiated across the whole dataset with the following 
       caption={Filter pass control},
        style=c-style,
         language=C++,
-         firstnumber=77,
-          linerange={77-91}]{../source/complexFIR.cpp}
+         firstnumber=103,
+          linerange={103-117}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
@@ -109,8 +109,8 @@ Perhaps one of the most basic operations employed in the HLS environment is loop
      style=c-style,
      numbers=left,
      language=C++,
-     firstnumber=54,
-     linerange={54-59}]{../source/complexFIR.cpp}
+     firstnumber=80,
+     linerange={80-85}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
@@ -127,8 +127,8 @@ Another area this optimization is used is in the shift register within a computa
      style=c-style,
      numbers=left,
      language=C++,
-     firstnumber=123,
-     linerange={123-136}]{../source/complexFIR.cpp}
+     firstnumber=149,
+     linerange={149-159}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
@@ -212,18 +212,18 @@ The structure shown in Figure \ref{fig:arrayPartComplete} utilizes complete part
 
 This allows array elements to be accessed in multiples of three. To utilize the array in this manner, a factor of 3 should be present in the design when unrolling or pipelining. The advantages of higher-factor partitioning reduces the discrete hardware necessary to store an element of data, at the potential cost of increased design latency.
 
-Despite the advantages of higher-factor partitioning, the simplicity of the FIR filter, and its small number of taps, is conducive to complete array partitions on data in the system. For example, Listing \ref{lst:FIRarraypart} shows how the pipeline shift registers are partitioned.
+Despite the advantages of higher-factor partitioning, the simplicity of the FIR filter and its small number of taps is conducive to complete array partitions on data in the system. For example, Listing \ref{lst:FIRarraypart} shows how the pipeline shift registers are partitioned.
 
 
 \begin{quote}
 \begin{singlespace}
     \lstinputlisting[breaklines=true,
      label={lst:FIRarraypart},
-      caption={Convolution algorithm},
+      caption={Array partition preprocessor definition},
        style=c-style,
         language=C++,
-         firstnumber=113,
-          linerange={113-117}]{../source/complexFIR.cpp}
+         firstnumber=141,
+          linerange={141-143}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
@@ -280,8 +280,8 @@ To use this functionality, we access functions in the \codeword{ap_int.h} and \c
       caption={System datatypes},
        style=c-style,
         language=C++,
-         firstnumber=20,
-          linerange={20-23}]{../source/datatypes.h}
+         firstnumber=45,
+          linerange={45-48}]{../source/datatypes.h}
 \end{singlespace}
 \end{quote}
 
