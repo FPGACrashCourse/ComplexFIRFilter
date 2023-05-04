@@ -103,7 +103,7 @@ void complexFIR(int *inputReal, int *inputImg, hls::stream<FIR_INT_OUTPUT> &outp
 COMPUTE:
     for (int k = 0; k < filterLength; k++)
     {
-#pragma HLS UNROLL factor = 2
+#pragma HLS PIPELINE
     	FIR_INT_INPUT inTempReal = FIR_INT_INPUT(inputReal[FILTER_SIZE + k]);
     	FIR_INT_INPUT inTempImg = FIR_INT_INPUT(inputImg[FILTER_SIZE + k]);
 
@@ -142,6 +142,9 @@ void computeComplexFIR(FIR_INT_INPUT inputReal, FIR_INT_INPUT inputImg, FIR_INT_
 #pragma HLS ARRAY_PARTITION variable = delayLineReal type = complete
 #pragma HLS ARRAY_PARTITION variable = delayLineImg type = complete
 
+#pragma HLS ARRAY_PARTITION variable = filterReal type = complete
+#pragma HLS ARRAY_PARTITION variable = filterImg type = complete
+
 #ifdef FIR_DEBUG_MODE
     printf("computeComplexFIR: Recieved input %d + j%d\n", inputReal.to_int(), inputImg.to_int());
 #endif
@@ -165,7 +168,7 @@ PIPELINE_DELAY:
 FILTER_TAPS:
     for (int j = 0; j < FILTER_SIZE; j++)
     {
-#pragma HLS PIPELINE
+#pragma HLS UNROLL
         resultReal += (delayLineReal[j] * filterReal[j]) - (delayLineImg[j] * filterImg[j]);
         resultImg += (delayLineReal[j] * filterImg[j]) + (filterReal[j] * delayLineImg[j]);
     }

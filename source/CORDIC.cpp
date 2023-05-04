@@ -49,6 +49,7 @@ void bulkCordicConvert(hls::stream<FIR_INT_OUTPUT> &cos, hls::stream<FIR_INT_OUT
 	// Initialize a bunch of CORDIC's to convert the incoming data:
 	BULK_CORDIC: for(int i = 0; i < convertSize; i++)
 	{
+#pragma HLS UNROLL
 		//Read from the stream and convert to fixed point:
 		cos.read(cosInt);
 		sin.read(sinInt);
@@ -136,7 +137,7 @@ void cordic(FIXED_POINT &cos, FIXED_POINT &sin, FIXED_POINT *mag, FIXED_POINT *t
 ROTATOR:
         for (int i = 0; i < NUM_ITERATIONS; i++)
         {
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE II = 1
                 // Compute a shift iteration for the system:
                 FIXED_POINT cosShift = currentCos >> i;
                 FIXED_POINT sinShift = currentSin >> i;

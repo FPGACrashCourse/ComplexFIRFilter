@@ -57,12 +57,12 @@ void polarFir(int *inputReal, int *inputImg, float *outputMag, float *outputPhas
 
 // Define the system's AXI interface:
 // Data inputs:
-#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave
-#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave
+#pragma HLS INTERFACE mode = m_axi port = inputReal offset = slave bundle=inReal
+#pragma HLS INTERFACE mode = m_axi port = inputImg offset = slave bundle=inImg
 
 // Polar outputs:
-#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave
-#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave
+#pragma HLS INTERFACE mode = m_axi port = outputMag offset = slave bundle=outMag
+#pragma HLS INTERFACE mode = m_axi port = outputPhase offset = slave bundle=outPhase
 
 #pragma HLS INTERFACE mode = s_axilite port = inputLength
 #pragma HLS INTERFACE mode = s_axilite port = return
