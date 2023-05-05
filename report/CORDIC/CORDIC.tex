@@ -391,6 +391,7 @@ We see that beyond 10 iterations, there is no significant improvement in the alg
 
 \section{Optimization}
 
+\subsection{Pipelining}
 The algorithmic structure of the CORDIC is conducive to optimization. Unlike a FIR filter's convolutional structure, the CORDIC is a simple fixed-length iterative process that is immediately structured for optimization via parallelism.  Given that observation, we optimize the code structure using the precompiler directive \codeword{#pragma HLS PIPELINE} within the main rotation algorithm. This is shown below in Listing \ref{CORDICpipeline}.
 
 		\begin{singlespace}
@@ -399,13 +400,32 @@ The algorithmic structure of the CORDIC is conducive to optimization. Unlike a F
             caption={Pipeline optimization},
             style=c-style,
             language=C++,
-            firstnumber=136,
-            linerange={136-139},
+            firstnumber=137,
+            linerange={137-143},
             ]{../source/CORDIC.cpp}
         \end{singlespace}
-
-
+        
 The pipelined algorithm allows parallel usage of hardware. This reduces latency significantly in the design, and increases the overall throughput of the processing chain. This is the only optimization performed to the CORDIC, which despite its simplicity, achieves a design latency as noted in Figure \ref{optimizedFIRutil}.
+
+\subsection{Unrolling}
+
+Further optimization can be made to the design. While an individual iteration of the CORDIC computes a vector pair, the processing chain requires that the coordinate system conversion is performed across the entire dataset. Much like concepts in the FIR filter, the usage of the precompiler directive \codeword{#pragma HLS UNROLL} increases parallelism within the design. Because the CORDIC is an iterative algorithm, it is not possible to include loop unrolling in the actual calculation itself. However, in the higher-level loop that calls the algorithm, it's entirely possible. This is shown in Listing \ref{CORDICunroll}.
+
+
+		\begin{singlespace}
+            \lstinputlisting[breaklines=true,
+            label={CORDICunroll},
+            caption={Loop optimization},
+            style=c-style,
+            language=C++,
+            firstnumber=50,
+            linerange={50-66},
+            ]{../source/CORDIC.cpp}
+        \end{singlespace}
+        
+        The usage of this particular precompiler directive increases the number of calls to the CORDIC converter, and subsequently increases design throughput. The results from this optimization is shown in Figure \ref{optimizedFIRutil}.
+
+
 
 
 

@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage[section]{placeins}
 \usepackage[toc,page]{appendix}
+\addtocontents{toc}{\protect\hypertarget{toc}{}}
 \usepackage{setspace}
 \usepackage{acro}
 \usepackage{textcomp}
@@ -11,6 +12,30 @@
 \usepackage{blindtext}
 \usepackage{caption}
 \usepackage[table,xcdraw]{xcolor}
+
+%Hyper links:
+\usepackage{hyperref}
+\hypersetup{
+    bookmarks=true,         % show bookmarks bar?
+    bookmarksopen=true,
+    unicode=false,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={Design and Implementation of a Discrete FIR and CORDIC Conversion System},    % title
+    pdfauthor={Alexander Stepko, axstepko.com},     % author
+    pdfsubject={Report},   % subject of the document
+    pdfcreator={axstepko},   % creator of the document
+    pdfproducer={Texifier}, % producer of the document
+    pdfkeywords={FPGA, FIR, CORDIC, axstepko.com}, % list of keywords
+    pdfnewwindow=true,      % links in new PDF window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=blue,          % color of internal links (change box color with linkbordercolor)
+    citecolor=blue,        % color of links to bibliography
+    filecolor=cyan,         % color of file links
+    urlcolor=cyan        % color of external links
+}
 
 
 
@@ -173,6 +198,11 @@
 
 % -------------------------- ACRONYMS -----------------------------------------------
 
+
+\DeclareAcronym{AXI}{
+	short=AXI,
+	long=Advanced eXtensible Interface 
+}
 \DeclareAcronym{CORDIC}{
 	short=CORDIC,
 	long=coordinate rotation digital computer
@@ -195,6 +225,11 @@
 \DeclareAcronym{HLS}{
 	short=HLS,
 	long=high-level synthesis
+}
+
+\DeclareAcronym{IDE}{
+	short=IDE,
+	long=integrated development environment
 }
 
 \DeclareAcronym{IP}{
@@ -258,7 +293,7 @@
 \fancypagestyle{plain}
 %% Leave some space here for the header to not place a 'T' for some reason..
 
-This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any AXI4 compliant design. The processing chain consists of the following components:
+This report discusses the design, optimization, and physical implementation of a complex discrete signal processing system. The processing system involves a 1-D \ac{FIR} filter in conjunction with a \ac{CORDIC} resultant in a hardware-optimized low-latency accelerator that can be used as an IP in any \ac{AXI} compliant design. The processing chain consists of the following components:
 \begin{figure}[h!]
 	\centering
 	\fboxsep=3mm
@@ -269,7 +304,7 @@ This report discusses the design, optimization, and physical implementation of a
 
 The processing chain computes a 1-D complex FIR filter on a dataset loaded to the accelerator in cartesian ($(x, y)$) format. The output of the FIR filter is also of the cartesian form. This cartesian dataset is streamed via a FIFO data channel into a CORDIC accelerator, which performs a conversion of the input vector ($(x, y)$) to the polar form ($(r, \theta)$). This data is then directed back towards the Zynq processor, which displays the product on the console.
 
-This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. This chain was then packaged as an \ac{IP}, and used in a block design in Vivado. Hardware was synthesized and implemented in Vivado, and the exported hardware was then used in the Vitis IDE to finish integration of the accelerator into a complete system. The target hardware for this processing chain is a Xilinx Zynq-7000 series chipset, which is held on a Digilent/Avnet/National Instruments Zedboard development board.
+This processing chaing was developed in Vitis HLS, an advanced \ac{HLS} synthesis tool that allows seemingly linear C (or C++/Python) code into hardware-accelerated models targeted for implementation on an \ac{FPGA}. This chain was then packaged as an \ac{IP}, and used in a block design in Vivado. Hardware was synthesized and implemented in Vivado, and the exported hardware was then used in the Vitis \ac{IDE} to finish integration of the accelerator into a complete system. The target hardware for this processing chain is a Xilinx Zynq-7000 series chipset, which is held on a Digilent/Avnet/National Instruments Zedboard development board.
 
 \vspace{1em}
 
@@ -451,12 +486,12 @@ Then, with the datatypes properly generated and allocated, the accelerator is se
             linerange={137-141},]{../IDE/polarFIR_r10/src/main.c}
         \end{singlespace} 
         
-Once this process is complete, we run the accelerator using the \codeword{runHardware();} function provided by the IP-control abstraction layer.
+Once this process is complete, we run the accelerator using the \codeword{runHardware();} function provided by the IP-control abstraction layer. Upon completion of the dataset processing, the accelerator notifies the Zynq processor via a hardware interrupt that a valid result is ready to be read and further processed.
         
  
 \section{Validation}
        
-Validation of the hardware's functionality in the IDE is rather simple. Because the components were tested in HLS, the final validation is to check if the IDE product can properly interact with the accelerator. This is accomplishe via running the hardware (as previously mentioned), and then waiting for the hardware to return it has finished computation. 
+Validation of the hardware's functionality in the IDE is rather simple. Because the components were tested in HLS, the final validation is to check if the IDE product can properly interact with the accelerator. This is accomplished via running the hardware (as previously mentioned), and then waiting for the hardware to return it has finished computation via an interrupt. 
 
 With the final results, we print the output results. Using a test dataset of the input vectors, filter coefficents, we initialize the dataset and run the test. We obtain the following output from the IDE after running the accelerator:
 
@@ -481,9 +516,18 @@ With the final results, we print the output results. Using a test dataset of the
  \end{figure}
  \FloatBarrier
  
- Manual calculation of these results verifies that the FIR filter correctly performs a filter pass, and the CORDIC computes the output value of the system. We consider the design to be complete, and have conducted a thorough study of its performance. 
+ Manual calculation of these results verifies that the FIR filter correctly performs a filter pass using the equations developed in section \ref{FIRtheory}, and the CORDIC computes the output value of the system using the trigonometry shown in section \ref{cordicTheory}. Additionally, the accuracy of the CORDIC is quite good, which validates that the accelerator's iteration depth for the CORDIC is satisfactory.
  
- Future work on this processing system look to allow interaction of the design using other data inputs aside from fixed numbers. Using audio or downconverted RF samples provides the basis for a rudementary processing system capable of detecting phase changes in a given signal. Additionally, the high-throughput of the design ensures that processing latency is kept to a minimum, and hardware resources are also minimized.
+ 
+ \subsection{Concluding remarks}
+ 
+ The extensive analysis in this report of a FIR-CORDIC processing chain provides an in-depth look at the development of FPGA hardware accelerators in the Vitis HLS development environment. The simplicity of the generated source code demonstrates the ease of creating highly optimized algorithms, without an in-depth understanding of raw Verilog. Additionally, more nuanced design aspects such as pipelining or serial-to-parallel conversion is highly abstracted from the developer. Also, it appears that the development cycle for an HLS product is shorter.
+ 
+ Although using Vitis HLS makes writing high-performance accelerators ``easier,'' it by no means does it automatically. Development must still adhere to common digital design principles such as memory dependencies, pipeline architecture, and dataset manipulation. The abstraction provided by Vitis HLS is no substitute for a proper understanding of digital design. A thorough background in digital discrete signal processing is also necessary, especially when working in both a time and/or frequency domain processing chain.
+ 
+ Despite the depth of analysis provided in this report, the processing chain developed is rather basic. The interaction with the processing chain is also highly limited, and is by no means a product capable of actual signal processing. Future work on driver interaction and perhaps the HLS product itself should look to further develop the design into an actual realtime signal processing system. This is accomplished via using the accelerator in a ``stream'' configuration, rather than a ``load, run, read'' architecture. While ``load, run, read'' is simple to understand and use, it is not scalable for a realtime processing system. 
+ 
+ Given this expansion in functionality, it is then possible to use the accelerator in real applications such as audio or 1-D image processing. The speed of the system also enables processing of downconverted RF samples at baseband. The output of the accelerator can then be used as a method to detect phase or amplitude modulation for, for example, a very poor digital radio reciever. We say poor, because nothing in the design accounts for timing errors/oscillator offset, nor does it allow the means to synchronize phase-locked-loops between the transmitter and reciever. Nevertheless, a reliable FIR filter is at the center of this system, and its importance should be emphasized.
      
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

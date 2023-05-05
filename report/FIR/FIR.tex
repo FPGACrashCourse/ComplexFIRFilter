@@ -1,6 +1,6 @@
 \documentclass[../report_polarFIR.tex]{subfiles}
 \begin{document}
-\chapter{Cartesian \ac{FIR} Filter}
+\chapter{Cartesian FIR Filter}
 
 The FIR filter is implemented in Vitis HLS, using equations shown in section \ref{FIRtheory} to compute the 1-D convolution. The filter inputs have been specified on a range of $[-50, 50]$, which includes the filter coefficients. The computation of a convolution is rather simple, taking into account the fact that we have complex numbers to multiply (the filter weights, and the raw data to be processed). Generically, for complex vectors
 \begin{equation}
@@ -155,12 +155,12 @@ For example, consider the filter pass:
       caption={Convolution algorithm},
        style=c-style,
         language=C++,
-         firstnumber=139,
-          linerange={139-145}]{../source/complexFIR.cpp}
+         firstnumber=103,
+          linerange={103-117}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
-Without the precompiler directive \codeword{#pragma HLS PIPELINE} on line 142, this loop takes a large amount of time to compute. This amount is estimated in equation \ref{FIRlatency}. 
+Without the precompiler directive \codeword{#pragma HLS PIPELINE}, this loop takes a large amount of time to compute. This amount is estimated in equation \ref{FIRlatency}. 
 
 Upon re-synthesis of the design with the precompiler directive the loop's performance is improved dramatically, reducing the number of cycles necessary to compute a result to an iteration interval of 1 (\codeword{II = 1}). This is a dramatic improvement in comparison to the old design. Additionally, the efficiency of the design also ensures that resources allocated for that element of the processing chain are at a maximal utilization.
 
@@ -219,11 +219,11 @@ Despite the advantages of higher-factor partitioning, the simplicity of the FIR 
 \begin{singlespace}
     \lstinputlisting[breaklines=true,
      label={lst:FIRarraypart},
-      caption={Array partition preprocessor definition},
+      caption={Array partition precompiler directive},
        style=c-style,
         language=C++,
-         firstnumber=141,
-          linerange={141-143}]{../source/complexFIR.cpp}
+         firstnumber=142,
+          linerange={142-143}]{../source/complexFIR.cpp}
 \end{singlespace}
 \end{quote}
 
